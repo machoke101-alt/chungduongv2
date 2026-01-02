@@ -7,13 +7,17 @@ import PostTrip from './components/PostTrip.tsx';
 import BookingsList from './components/BookingsList.tsx';
 import ProfileManagement from './components/ProfileManagement.tsx';
 import AdminPanel from './components/AdminPanel.tsx';
-import AIAssistant from './components/AIAssistant.tsx';
 import BookingModal from './components/BookingModal.tsx';
 import AuthModal from './components/AuthModal.tsx';
 import TripManagement from './components/TripManagement.tsx';
 import OrderManagement from './components/OrderManagement.tsx';
 import { Trip, Booking, TripStatus, Notification, Profile } from './types.ts';
 import { supabase } from './lib/supabase.ts';
+
+/**
+ * SQL MIGRATION (Run this in Supabase SQL Editor):
+ * ALTER TABLE trips ADD COLUMN IF NOT EXISTS arrival_time TIMESTAMPTZ;
+ */
 
 const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState('search');
@@ -118,7 +122,10 @@ const App: React.FC = () => {
 
       trips.forEach(async (trip) => {
         const departure = new Date(trip.departure_time);
-        const completionTime = new Date(departure.getTime() + 3 * 60 * 60 * 1000);
+        // Ưu tiên sử dụng arrival_time từ DB, nếu không có thì cộng mặc định 3 tiếng
+        const completionTime = trip.arrival_time 
+          ? new Date(trip.arrival_time) 
+          : new Date(departure.getTime() + 3 * 60 * 60 * 1000);
 
         if ((trip.status === TripStatus.PREPARING || trip.status === TripStatus.FULL) && now >= departure && now < completionTime) {
           hasChanges = true;
@@ -186,14 +193,6 @@ const App: React.FC = () => {
     };
   }, [fetchTrips, fetchProfile, fetchUserBookings, fetchStaffBookings, fetchUserStats, user?.id, profile?.id]);
 
-  useEffect(() => {
-    if (profile) {
-       fetchUserBookings(profile.id);
-       fetchStaffBookings(profile);
-       fetchUserStats(profile.id);
-    }
-  }, [profile, fetchUserBookings, fetchStaffBookings, fetchUserStats]);
-
   const handlePostTrip = async (tripsToPost: any[]) => {
     if (!user) return;
     try {
@@ -204,14 +203,23 @@ const App: React.FC = () => {
         dest_name: t.destination.name,
         dest_desc: t.destination.description,
         departure_time: t.departureTime,
+        arrival_time: t.arrivalTime, // Đảm bảo cột này tồn tại trong DB
         price: t.price,
         seats: t.seats,
         available_seats: t.availableSeats,
         vehicle_info: t.vehicleInfo,
         status: TripStatus.PREPARING
       }));
+      
       const { error } = await supabase.from('trips').insert(formattedTrips);
-      if (error) throw error;
+      
+      if (error) {
+        if (error.message.includes('arrival_time')) {
+          throw new Error('Cơ sở dữ liệu chưa được cập nhật cột "arrival_time". Vui lòng liên hệ quản trị viên hoặc chạy script SQL đã cung cấp.');
+        }
+        throw error;
+      }
+      
       addNotification('Thành công', `Đã đăng ${formattedTrips.length} chuyến xe mới!`, 'success');
       refreshAllData();
       setActiveTab('manage-trips');
@@ -240,7 +248,7 @@ const App: React.FC = () => {
     if (bookingError) {
       alert('Lỗi đặt chỗ: ' + bookingError.message);
     } else {
-      const newAvailable = latestTrip.available_seats - data.seats;
+      const newAvailable = (latestTrip?.available_seats || 0) - data.seats;
       if (newAvailable === 0) {
         await supabase.from('trips').update({ status: TripStatus.FULL }).eq('id', selectedTrip.id);
       }
@@ -253,6 +261,12 @@ const App: React.FC = () => {
   };
 
   const isStaff = profile?.role === 'admin' || profile?.role === 'manager' || profile?.role === 'driver';
+
+  const handleOpenBookingModal = (tripId: string) => {
+    if (!user) { setIsAuthModalOpen(true); return; }
+    const trip = trips.find(t => t.id === tripId);
+    if (trip) { setSelectedTrip(trip); setIsBookingModalOpen(true); }
+  };
 
   const renderContent = () => {
     switch (activeTab) {
@@ -268,12 +282,6 @@ const App: React.FC = () => {
     }
   };
 
-  const handleOpenBookingModal = (tripId: string) => {
-    if (!user) { setIsAuthModalOpen(true); return; }
-    const trip = trips.find(t => t.id === tripId);
-    if (trip) { setSelectedTrip(trip); setIsBookingModalOpen(true); }
-  };
-
   return (
     <>
       <Layout 
@@ -286,7 +294,6 @@ const App: React.FC = () => {
           {renderContent()}
         </div>
       </Layout>
-      <AIAssistant />
       {selectedTrip && (
         <BookingModal 
           trip={selectedTrip} 

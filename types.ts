@@ -34,6 +34,7 @@ export interface Trip {
   dest_name: string;
   dest_desc?: string;
   departure_time: string;
+  arrival_time?: string; // Thời gian dự kiến đến (Mới)
   created_at?: string; // Thời gian tạo chuyến
   price: number;
   seats: number;

@@ -34,12 +34,6 @@ const CopyableCode: React.FC<CopyableCodeProps> = ({ code, label, className = ""
       ) : (
         <Copy size={12} className="opacity-0 group-hover:opacity-100 transition-opacity text-indigo-400" />
       )}
-      
-      {copied && (
-        <div className="absolute -top-8 left-1/2 -translate-x-1/2 px-2 py-1 bg-slate-900 text-white text-[8px] font-black uppercase rounded shadow-xl animate-in slide-in-from-bottom-1 fade-in">
-          Đã chép!
-        </div>
-      )}
     </button>
   );
 };

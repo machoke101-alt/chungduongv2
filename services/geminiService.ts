@@ -3,25 +3,13 @@ import { GoogleGenAI } from "@google/genai";
 import { LOCAL_LOCATIONS } from "./locationData";
 
 /**
- * Kiểm tra xem API Key đã được cấu hình hay chưa
+ * Tìm kiếm địa chỉ hành chính từ bộ nhớ cục bộ (Hà Nội & Giao Thủy)
  */
-const getAIInstance = () => {
-  const apiKey = process.env.API_KEY;
-  if (!apiKey || apiKey.trim() === "" || apiKey === "undefined") {
-    return null;
-  }
-  try {
-    return new GoogleGenAI({ apiKey });
-  } catch (e) {
-    console.error("Lỗi khởi tạo Gemini:", e);
-    return null;
-  }
-};
-
 export const searchPlaces = async (query: string) => {
   if (!query || query.length < 1) return [];
   
   const normalizedQuery = query.toLowerCase().trim();
+  
   const matches = LOCAL_LOCATIONS.filter(loc => 
     loc.name.toLowerCase().includes(normalizedQuery) || 
     loc.shortName.toLowerCase().includes(normalizedQuery)
@@ -34,28 +22,30 @@ export const searchPlaces = async (query: string) => {
   }));
 };
 
+/**
+ * Phân tích lộ trình sử dụng Gemini AI
+ */
 export const getRouteDetails = async (origin: string, destination: string) => {
-  const ai = getAIInstance();
-  if (!ai) return { text: "⚠️ Tính năng AI chưa được cấu hình API Key.", links: [] };
-
   try {
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     const response = await ai.models.generateContent({
       model: "gemini-3-flash-preview",
-      contents: `Phân tích lộ trình từ "${origin}" đến "${destination}". Tính quãng đường và thời gian dự kiến.`,
-      config: { tools: [{ googleSearch: {} }] },
+      contents: `Phân tích quãng đường và thời gian lái xe dự kiến từ "${origin}" đến "${destination}" tại Việt Nam. Trả về thông tin theo định dạng JSON: {"distance": "X km", "duration_text": "Y phút/giờ", "duration_minutes": Z}. Z là tổng số phút dự kiến.`,
+      config: {
+        systemInstruction: "Bạn là chuyên gia bản đồ. Hãy đưa ra ước tính chính xác dưới dạng JSON.",
+        responseMimeType: "application/json"
+      }
     });
-    return { text: response.text, links: [] };
+    return JSON.parse(response.text || "{}");
   } catch (error) {
     console.error("Gemini API Error:", error);
-    return { text: "Có lỗi xảy ra khi phân tích lộ trình.", links: [] };
+    return { error: "Không thể tính toán lộ trình." };
   }
 };
 
 export const chatWithAssistant = async (message: string, context: string) => {
-  const ai = getAIInstance();
-  if (!ai) return "Cấu hình API Key bị thiếu. Vui lòng kiểm tra lại môi trường hệ thống.";
-
   try {
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     const response = await ai.models.generateContent({
       model: "gemini-3-flash-preview",
       contents: `Context: ${context}\n\nUser: ${message}`,
@@ -66,6 +56,6 @@ export const chatWithAssistant = async (message: string, context: string) => {
     return response.text;
   } catch (error) {
     console.error("Gemini Chat Error:", error);
-    return "Xin lỗi, tôi đang gặp khó khăn khi kết nối với máy chủ AI.";
+    return "Xin lỗi, tôi đang gặp khó khăn khi kết nối. Bạn vui lòng thử lại sau nhé!";
   }
 };

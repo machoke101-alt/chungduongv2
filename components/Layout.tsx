@@ -56,7 +56,7 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab, noti
 
   const navItems = [
     { id: 'search', label: 'Tìm Chuyến', icon: Search },
-    { id: 'bookings', label: 'Hành Trình', icon: Ticket },
+    { id: 'bookings', label: 'Lịch sử chuyến', icon: Ticket },
   ];
 
   const manageItems = [
@@ -159,7 +159,7 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab, noti
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 flex flex-col min-w-0 overflow-hidden relative">
+      <main className="flex-1 flex flex-col min-0 overflow-hidden relative">
         <header className="h-20 bg-white/80 backdrop-blur-md border-b border-slate-100 flex items-center justify-between px-4 sm:px-8 sticky top-0 z-20">
           <div className="flex items-center gap-3">
             <div className="lg:hidden bg-emerald-600 p-2 rounded-xl shadow-lg shadow-emerald-100">
@@ -239,7 +239,7 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab, noti
 
             <button onClick={() => setActiveTab('bookings')} className={`flex flex-col items-center gap-1 p-3 flex-1 transition-all ${activeTab === 'bookings' ? 'text-emerald-600' : 'text-slate-400'}`}>
               <Ticket size={22} className={activeTab === 'bookings' ? 'scale-110' : ''} />
-              <span className="text-[9px] font-bold uppercase tracking-widest">Lịch trình</span>
+              <span className="text-[9px] font-bold uppercase tracking-widest">Lịch sử</span>
               {activeTab === 'bookings' && <div className="w-1 h-1 bg-emerald-600 rounded-full mt-0.5"></div>}
             </button>
 

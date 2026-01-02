@@ -1,8 +1,8 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Search as SearchIcon, MapPin, Calendar, Clock, User, ChevronRight, Star, LayoutGrid, CalendarDays, ChevronDown, Car, DollarSign, ArrowUpDown, Filter, Check, X, History, Users } from 'lucide-react';
-import { Trip, TripStatus } from '../types';
-import CopyableCode from './CopyableCode';
+import { Search as SearchIcon, MapPin, Calendar, Clock, User, ChevronRight, Star, LayoutGrid, CalendarDays, ChevronDown, Car, DollarSign, ArrowUpDown, Filter, Check, X, History, Users, ArrowRight } from 'lucide-react';
+import { Trip, TripStatus } from '../types.ts';
+import CopyableCode from './CopyableCode.tsx';
 
 // Component Dropdown dùng chung cho toàn hệ thống
 export const UnifiedDropdown = ({ label, icon: Icon, options, value, onChange, placeholder = "Tìm nhanh..." }: any) => {
@@ -79,9 +79,13 @@ const TripCard: React.FC<{ trip: Trip; onBook: (id: string) => void }> = ({ trip
   const timeStr = departureDate.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
   const dateStr = departureDate.toLocaleDateString('vi-VN');
   
+  const arrivalStr = trip.arrival_time 
+    ? new Date(trip.arrival_time).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
+    : null;
+
   const createdDate = trip.created_at ? new Date(trip.created_at) : null;
   const createdStr = createdDate 
-    ? `Đăng lúc: ${createdDate.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })} - ${createdDate.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' })}`
+    ? `Đăng lúc: ${createdDate.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}`
     : 'Mới cập nhật';
 
   const isFull = trip.available_seats <= 0 || trip.status === TripStatus.FULL;
@@ -96,7 +100,7 @@ const TripCard: React.FC<{ trip: Trip; onBook: (id: string) => void }> = ({ trip
 
       <div className="flex justify-between items-start mb-6">
         <div className="flex gap-3 items-center">
-          <div className="w-12 h-12 rounded-2xl bg-slate-50 flex items-center justify-center text-indigo-600 text-lg font-black border border-slate-100 shadow-sm">
+          <div className="w-12 h-12 rounded-2xl bg-slate-50 flex items-center justify-center text-emerald-600 text-lg font-black border border-slate-100 shadow-sm">
             {trip.driver_name?.charAt(0) || 'T'}
           </div>
           <div>
@@ -107,8 +111,8 @@ const TripCard: React.FC<{ trip: Trip; onBook: (id: string) => void }> = ({ trip
             </div>
           </div>
         </div>
-        <div className="text-right mr-6">
-          <p className="text-lg font-black text-indigo-600 tracking-tight">
+        <div className="text-right">
+          <p className="text-lg font-black text-emerald-600 tracking-tight">
             {new Intl.NumberFormat('vi-VN').format(trip.price)}đ
           </p>
           <CopyableCode code={tripCode} className="text-[9px] font-bold text-slate-300 uppercase tracking-tighter ml-auto" />
@@ -116,23 +120,24 @@ const TripCard: React.FC<{ trip: Trip; onBook: (id: string) => void }> = ({ trip
       </div>
 
       <div className="space-y-4 mb-6 relative">
-        <div className="absolute left-[7px] top-3 bottom-3 w-[1px] bg-slate-100"></div>
+        <div className="absolute left-[7px] top-3 bottom-3 w-[1px] bg-slate-100 border-l border-dashed border-slate-200"></div>
         <div className="flex items-center gap-4 relative z-10">
           <div className="w-3.5 h-3.5 rounded-full border-2 border-slate-200 bg-white"></div>
           <p className="font-bold text-slate-700 text-xs truncate">{trip.origin_name}</p>
         </div>
         <div className="flex items-center gap-4 relative z-10">
-          <div className="w-3.5 h-3.5 rounded-full border-2 border-indigo-500 bg-indigo-50"></div>
+          <div className="w-3.5 h-3.5 rounded-full border-2 border-emerald-500 bg-emerald-50"></div>
           <p className="font-bold text-slate-700 text-xs truncate">{trip.dest_name}</p>
         </div>
       </div>
 
       <div className="flex items-center justify-between pt-4 border-t border-slate-50">
-        <div className="flex flex-col gap-0.5">
-          <div className="text-[11px] font-black text-slate-800 flex items-center gap-1.5 uppercase tracking-wider">
-            <Clock size={12} className="text-indigo-500" /> {timeStr}
+        <div className="flex flex-col">
+          <div className="flex items-center gap-1.5 text-[11px] font-black text-slate-800 uppercase tracking-wider">
+            <Clock size={12} className="text-emerald-500" /> {timeStr}
+            {arrivalStr && <><ArrowRight size={10} className="text-slate-300" /> <span className="text-indigo-500">{arrivalStr}</span></>}
           </div>
-          <div className="text-[9px] font-bold text-slate-400 uppercase ml-4.5 tracking-tight">
+          <div className="text-[9px] font-bold text-slate-400 mt-0.5">
              {dateStr}
           </div>
         </div>
@@ -150,7 +155,7 @@ const TripCard: React.FC<{ trip: Trip; onBook: (id: string) => void }> = ({ trip
         disabled={isFull}
         className={`w-full mt-4 py-3.5 rounded-2xl font-black text-[11px] uppercase tracking-widest transition-all flex items-center justify-center gap-2 ${
           !isFull 
-          ? 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-xl shadow-indigo-100 active:scale-[0.98]' 
+          ? 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-xl shadow-emerald-100' 
           : 'bg-slate-100 text-slate-400 cursor-not-allowed'
         }`}
       >
@@ -160,7 +165,6 @@ const TripCard: React.FC<{ trip: Trip; onBook: (id: string) => void }> = ({ trip
   );
 };
 
-// Fix for line 155: Define the missing SearchTripsProps interface
 interface SearchTripsProps {
   trips: Trip[];
   onBook: (id: string) => void;
@@ -184,51 +188,31 @@ const SearchTrips: React.FC<SearchTripsProps> = ({ trips, onBook }) => {
       <div className="bg-white/50 p-6 rounded-[32px] border border-slate-100 space-y-6">
         <div className="flex flex-col md:flex-row gap-4 items-center">
           <div className="relative flex-1 w-full group">
-            <SearchIcon className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-600 transition-colors" size={18} />
+            <SearchIcon className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-emerald-600 transition-colors" size={18} />
             <input 
               type="text" 
-              placeholder="Search by route, driver, trip code..." 
+              placeholder="Tìm theo lộ trình, mã chuyến, tài xế..." 
               value={searchTerm} 
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-16 pr-6 py-3.5 bg-slate-100/50 border border-slate-200 focus:border-indigo-400 focus:bg-white rounded-xl outline-none transition-all font-bold text-slate-800 text-xs placeholder:text-slate-400" 
+              className="w-full pl-16 pr-6 py-3.5 bg-slate-100/50 border border-slate-200 focus:border-emerald-400 focus:bg-white rounded-xl outline-none transition-all font-bold text-slate-800 text-xs" 
             />
           </div>
-          <button className="flex items-center gap-2 px-6 py-3 bg-white border border-slate-200 rounded-xl text-[11px] font-black text-slate-500 hover:text-indigo-600 transition-all shadow-sm">
-             <User size={16} /> All Drivers <ChevronDown size={14} />
-          </button>
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
           <UnifiedDropdown 
-            label="All Locations" 
+            label="Tất cả vị trí" 
             icon={MapPin} 
             value="ALL"
-            options={[
-              { label: 'All Locations', value: 'ALL' },
-              { label: 'Hà Nội', value: 'HN' },
-              { label: 'Nam Định', value: 'ND' },
-              { label: 'Thái Bình', value: 'TB' }
-            ]}
+            options={[{ label: 'Tất cả vị trí', value: 'ALL' }]}
             onChange={() => {}}
           />
           <UnifiedDropdown 
-            label="All Due Dates" 
-            icon={CalendarDays} 
-            value="ALL"
-            options={[
-              { label: 'All Due Dates', value: 'ALL' },
-              { label: 'Hôm nay', value: 'TODAY' },
-              { label: 'Ngày mai', value: 'TOMORROW' },
-              { label: 'Tuần này', value: 'WEEK' }
-            ]}
-            onChange={() => {}}
-          />
-          <UnifiedDropdown 
-            label="All Vehicles" 
+            label="Tất cả xe" 
             icon={Car} 
             value={vehicleFilter}
             options={[
-              { label: 'All Vehicles', value: 'ALL' },
+              { label: 'Tất cả loại xe', value: 'ALL' },
               { label: 'Sedan 4 chỗ', value: '4 chỗ' },
               { label: 'SUV 7 chỗ', value: '7 chỗ' },
               { label: 'Limousine', value: 'Limousine' }
@@ -236,21 +220,15 @@ const SearchTrips: React.FC<SearchTripsProps> = ({ trips, onBook }) => {
             onChange={setVehicleFilter}
           />
           <UnifiedDropdown 
-            label="Sort By" 
+            label="Sắp xếp" 
             icon={ArrowUpDown} 
             value={sortOrder}
             options={[
               { label: 'Mới nhất', value: 'NEWEST' },
-              { label: 'Giá thấp nhất', value: 'PRICE_ASC' },
-              { label: 'Giá cao nhất', value: 'PRICE_DESC' }
+              { label: 'Giá thấp nhất', value: 'PRICE_ASC' }
             ]}
             onChange={setSortOrder}
           />
-          <div className="ml-auto">
-             <button className="p-2.5 text-slate-400 hover:text-indigo-600 transition-all">
-                <LayoutGrid size={20} />
-             </button>
-          </div>
         </div>
       </div>
 

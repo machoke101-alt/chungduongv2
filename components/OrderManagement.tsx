@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { 
-  ShoppingBag, Search, CheckCircle2, XCircle, Clock, RefreshCcw, Loader2, ArrowUpDown, Navigation, Car, User
+  ShoppingBag, Search, CheckCircle2, XCircle, Clock, RefreshCcw, Loader2, ArrowUpDown, Navigation, Car, User, ArrowRight
 } from 'lucide-react';
 import { Booking, Profile, Trip } from '../types';
 import { supabase } from '../lib/supabase';
@@ -16,10 +16,13 @@ interface OrderManagementProps {
 
 type SortConfig = { key: string; direction: 'asc' | 'desc' | null };
 
-const getShortCity = (address: string) => {
-  if (!address) return '';
-  const parts = address.split(',');
-  return parts[parts.length - 1].trim();
+const parseRouteInfo = (address: string) => {
+  if (!address) return { huyen: '', tinh: '' };
+  const parts = address.split(',').map(p => p.trim());
+  const clean = (str: string) => str.replace(/^(Huyện|Quận|Xã|Thị trấn|Thị xã|Thành phố|Tp\.)\s+/i, '').trim();
+  const tinhRaw = parts[parts.length - 1] || '';
+  const huyenRaw = parts[parts.length - 2] || tinhRaw;
+  return { huyen: clean(huyenRaw), tinh: clean(tinhRaw) };
 };
 
 const OrderManagement: React.FC<OrderManagementProps> = ({ profile, trips, onRefresh }) => {
@@ -36,13 +39,11 @@ const OrderManagement: React.FC<OrderManagementProps> = ({ profile, trips, onRef
     if (!profile) return;
     setLoading(true);
     try {
-      // Cập nhật select để lấy thêm profiles của tài xế thông qua bảng trips
       let query = supabase.from('bookings').select(`
         *, 
         trips(*, driver_profile:profiles(full_name)), 
         profiles:passenger_id(full_name, phone)
       `);
-      
       if (profile.role === 'driver') {
         const { data: myTrips } = await supabase.from('trips').select('id').eq('driver_id', profile.id);
         const myTripIds = myTrips?.map(t => t.id) || [];
@@ -64,35 +65,23 @@ const OrderManagement: React.FC<OrderManagementProps> = ({ profile, trips, onRef
 
   const filteredOrders = useMemo(() => {
     let filtered = allBookings.filter(order => {
+      const trip = order.trips;
       const bookingCode = `#ORD-${order.id.substring(0, 5).toUpperCase()}`;
       const passengerName = order.profiles?.full_name?.toLowerCase() || '';
-      const driverName = order.trips?.driver_profile?.full_name?.toLowerCase() || '';
-      const route = `${order.trips?.origin_name} ${order.trips?.dest_name}`.toLowerCase();
+      const route = `${trip?.origin_name} ${trip?.dest_name}`.toLowerCase();
       const matchesSearch = 
         order.passenger_phone?.includes(searchTerm) || 
         passengerName.includes(searchTerm.toLowerCase()) || 
-        driverName.includes(searchTerm.toLowerCase()) ||
         bookingCode.includes(searchTerm.toUpperCase()) || 
         route.includes(searchTerm.toLowerCase());
       const matchesStatus = statusFilter === 'ALL' || order.status === statusFilter;
       return matchesSearch && matchesStatus;
     });
+
     if (sortConfig.key && sortConfig.direction) {
       filtered.sort((a: any, b: any) => {
-        let valA, valB;
-        if (sortConfig.key === 'passenger_name') {
-          valA = a.profiles?.full_name || '';
-          valB = b.profiles?.full_name || '';
-        } else if (sortConfig.key === 'driver_name') {
-          valA = a.trips?.driver_profile?.full_name || '';
-          valB = b.trips?.driver_profile?.full_name || '';
-        } else if (sortConfig.key === 'route') {
-          valA = a.trips?.origin_name || '';
-          valB = b.trips?.origin_name || '';
-        } else {
-          valA = a[sortConfig.key];
-          valB = b[sortConfig.key];
-        }
+        let valA = a[sortConfig.key];
+        let valB = b[sortConfig.key];
         if (valA < valB) return sortConfig.direction === 'asc' ? -1 : 1;
         if (valA > valB) return sortConfig.direction === 'asc' ? 1 : -1;
         return 0;
@@ -111,94 +100,129 @@ const OrderManagement: React.FC<OrderManagementProps> = ({ profile, trips, onRef
     } catch (err: any) { alert(err.message); } finally { setActionLoading(null); }
   };
 
-  const SortHeader = ({ label, sortKey, width, textAlign = 'text-left' }: { label: string, sortKey: string, width?: string, textAlign?: string }) => (
-    <th style={{ width }} className={`px-4 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest cursor-pointer hover:bg-slate-100/50 transition-colors ${textAlign}`} onClick={() => handleSort(sortKey)}>
-      <div className={`flex items-center gap-2 ${textAlign === 'text-center' ? 'justify-center' : textAlign === 'text-right' ? 'justify-end' : ''}`}>
-        {label} <ArrowUpDown size={12} className={`${sortConfig.key === sortKey ? 'text-indigo-600' : 'opacity-20'}`} />
+  const SortHeader = ({ label, sortKey, width, textAlign = 'text-left' }: any) => (
+    <th 
+      style={{ width }} 
+      className={`px-3 py-2 text-[10px] font-black text-slate-400 uppercase tracking-widest cursor-pointer hover:bg-slate-100/50 transition-colors ${textAlign}`} 
+      onClick={() => handleSort(sortKey)}
+    >
+      <div className={`flex items-center gap-1.5 ${textAlign === 'text-center' ? 'justify-center' : textAlign === 'text-right' ? 'justify-end' : ''}`}>
+        {label} <ArrowUpDown size={10} className={`${sortConfig.key === sortKey ? 'text-indigo-600' : 'opacity-20'}`} />
       </div>
     </th>
   );
 
   return (
     <div className="space-y-4 animate-slide-up">
-      <div className="bg-white p-4 rounded-[24px] border border-slate-100 flex items-center justify-between gap-4">
+      <div className="bg-white p-3 rounded-[20px] border border-slate-100 flex items-center justify-between gap-3">
         <div className="relative flex-1 group">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
-          <input type="text" placeholder="Tìm đơn, khách, tài xế, lộ trình..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)}
-            className="w-full pl-12 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white outline-none text-xs font-bold" />
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
+          <input type="text" placeholder="Tìm đơn, khách, số ĐT..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)}
+            className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white outline-none text-[11px] font-bold" />
         </div>
         <UnifiedDropdown label="Trạng thái" icon={ShoppingBag} value={statusFilter} onChange={setStatusFilter}
           options={[{label:'Tất cả', value:'ALL'}, {label:'Đang chờ', value:'PENDING'}, {label:'Xác nhận', value:'CONFIRMED'}, {label:'Từ chối', value:'REJECTED'}]} />
-        <button onClick={fetchBookings} className="p-2.5 bg-slate-50 rounded-xl hover:bg-indigo-50 text-slate-400 hover:text-indigo-600 transition-colors border border-slate-200">
-          <RefreshCcw size={16} className={loading ? 'animate-spin' : ''} />
+        <button onClick={fetchBookings} className="p-2 bg-slate-50 rounded-xl border border-slate-200 hover:bg-indigo-50 text-slate-400 transition-colors">
+          <RefreshCcw size={14} className={loading ? 'animate-spin' : ''} />
         </button>
       </div>
 
-      <div className="bg-white rounded-[24px] border border-slate-100 shadow-sm overflow-hidden">
+      <div className="bg-white rounded-[20px] border border-slate-100 shadow-sm overflow-hidden">
         <div className="overflow-x-auto custom-scrollbar">
-          <table className="w-full text-left table-fixed min-w-[1200px]">
+          <table className="w-full text-left table-fixed min-w-[1000px]">
             <thead>
               <tr className="bg-slate-50/50 border-b border-slate-100">
-                <SortHeader label="ĐƠN HÀNG" sortKey="id" width="12%" />
-                <SortHeader label="LỘ TRÌNH" sortKey="route" width="18%" />
-                <SortHeader label="TÀI XẾ" sortKey="driver_name" width="12%" />
-                <SortHeader label="HÀNH KHÁCH" sortKey="passenger_name" width="20%" />
-                <SortHeader label="GHẾ / TIỀN" sortKey="total_price" width="12%" textAlign="text-center" />
-                <SortHeader label="TRẠNG THÁI" sortKey="status" width="12%" textAlign="text-center" />
-                <th className="px-4 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right pr-6">XOÁ/DỰT</th>
+                <SortHeader label="MÃ ĐƠN / ĐẶT" sortKey="created_at" width="14%" />
+                <SortHeader label="HÀNH KHÁCH" sortKey="passenger_name" width="18%" />
+                <SortHeader label="XE / TÀI XẾ" sortKey="driver_name" width="16%" />
+                <SortHeader label="LỘ TRÌNH" sortKey="route" width="23%" />
+                <SortHeader label="LỊCH TRÌNH" sortKey="departure_time" width="16%" />
+                <SortHeader label="TRẠNG THÁI / THAO TÁC" sortKey="status" width="13%" textAlign="text-center" />
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-50">
-              {filteredOrders.map(order => {
+              {filteredOrders.length > 0 ? filteredOrders.map(order => {
                 const trip = order.trips;
-                const driverName = trip?.driver_profile?.full_name || 'N/A';
+                const depTime = trip?.departure_time ? new Date(trip.departure_time).toLocaleTimeString('vi-VN', {hour:'2-digit', minute:'2-digit'}) : '--:--';
+                const arrTime = trip?.arrival_time ? new Date(trip.arrival_time).toLocaleTimeString('vi-VN', {hour:'2-digit', minute:'2-digit'}) : '--:--';
+                const depDate = trip?.departure_time ? new Date(trip.departure_time).toLocaleDateString('vi-VN') : '--/--/----';
+                const originInfo = parseRouteInfo(trip?.origin_name || '');
+                const destInfo = parseRouteInfo(trip?.dest_name || '');
+                const bookingCode = `#ORD-${order.id.substring(0, 5).toUpperCase()}`;
+                
+                const createdAt = order.created_at ? new Date(order.created_at) : null;
+                const bookingTime = createdAt ? createdAt.toLocaleTimeString('vi-VN', {hour:'2-digit', minute:'2-digit'}) : '--:--';
+                const bookingDate = createdAt ? createdAt.toLocaleDateString('vi-VN') : '--/--/----';
+
+                const driverName = trip?.driver_profile?.full_name || 'Đang cập nhật';
+                const vehicleInfo = trip?.vehicle_info || '---';
+
                 return (
-                  <tr key={order.id} className="hover:bg-slate-50/50 transition-colors">
-                    <td className="px-4 py-3">
-                      <CopyableCode code={`#ORD-${order.id.substring(0, 5).toUpperCase()}`} className="text-[11px] font-black text-slate-900 w-fit" />
-                      <div className="text-[9px] font-bold text-slate-400 mt-1 uppercase tracking-tighter">{new Date(order.created_at).toLocaleDateString('vi-VN')}</div>
+                  <tr key={order.id} className="hover:bg-slate-50/30 transition-colors">
+                    <td className="px-3 py-2">
+                       <div className="flex flex-col">
+                         <span className="text-[9px] font-bold text-slate-600 uppercase tracking-tighter leading-tight">{bookingTime} {bookingDate}</span>
+                         <CopyableCode code={bookingCode} className="text-[10px] font-black text-indigo-600 uppercase tracking-tighter" />
+                       </div>
                     </td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-1.5 text-[11px] font-bold text-slate-700">
-                        {getShortCity(trip?.origin_name)} <Navigation size={10} className="text-emerald-500" /> {getShortCity(trip?.dest_name)}
-                      </div>
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-1.5 text-[10px] font-bold text-slate-500 uppercase tracking-tighter">
-                        <User size={10} className="text-indigo-400" /> {driverName}
-                      </div>
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-3">
-                        <div className="h-7 w-7 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-600 font-black text-[10px] shrink-0">{order.profiles?.full_name?.charAt(0)}</div>
+                    <td className="px-3 py-2">
+                      <div className="flex items-center gap-2">
+                        <div className="h-7 w-7 rounded-lg bg-indigo-50 flex items-center justify-center text-indigo-600 font-black text-[10px] shrink-0 border border-indigo-100">{order.profiles?.full_name?.charAt(0)}</div>
                         <div className="min-w-0">
-                          <p className="text-[11px] font-bold text-slate-800 truncate">{order.profiles?.full_name}</p>
-                          <p className="text-[10px] font-bold text-indigo-500">{order.passenger_phone}</p>
+                          <p className="text-[11px] font-bold text-slate-800 truncate leading-tight">{order.profiles?.full_name}</p>
+                          <p className="text-[9px] font-bold text-indigo-600 truncate">{order.passenger_phone}</p>
                         </div>
                       </div>
                     </td>
-                    <td className="px-4 py-3 text-center">
-                      <div className="text-[11px] font-bold text-slate-900">{order.seats_booked} Ghế</div>
-                      <div className="text-[10px] font-black text-indigo-600">{new Intl.NumberFormat('vi-VN').format(order.total_price)}đ</div>
+                    <td className="px-3 py-2">
+                      <div className="min-w-0">
+                        <p className="text-[11px] font-bold text-slate-800 truncate leading-tight">{driverName}</p>
+                        <p className="text-[9px] font-bold text-slate-500 truncate uppercase mt-0.5 italic">{vehicleInfo}</p>
+                      </div>
                     </td>
-                    <td className="px-4 py-3 text-center">
-                      <span className={`inline-flex px-3 py-1 rounded-xl text-[9px] font-black uppercase border ${order.status === 'CONFIRMED' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : order.status === 'REJECTED' ? 'bg-rose-50 text-rose-600 border-rose-100' : 'bg-amber-50 text-amber-600 border-amber-100'}`}>
-                        {order.status === 'CONFIRMED' ? 'Duyệt' : order.status === 'REJECTED' ? 'Từ chối' : 'Chờ'}
-                      </span>
+                    <td className="px-3 py-2">
+                      <div className="flex items-center gap-3">
+                        <div className="max-w-[95px] min-w-0">
+                          <p className="text-[11px] font-black text-slate-800 truncate leading-tight">{originInfo.huyen}</p>
+                          <p className="text-[9px] font-bold text-slate-500 truncate leading-tight">{originInfo.tinh}</p>
+                        </div>
+                        <ArrowRight size={10} className="text-slate-300 shrink-0" />
+                        <div className="max-w-[95px] min-w-0">
+                          <p className="text-[11px] font-black text-emerald-600 truncate leading-tight">{destInfo.huyen}</p>
+                          <p className="text-[9px] font-bold text-slate-500 truncate leading-tight">{destInfo.tinh}</p>
+                        </div>
+                      </div>
                     </td>
-                    <td className="px-4 py-3 text-right pr-6">
-                      <div className="flex items-center justify-end gap-2">
-                        {actionLoading === order.id ? <Loader2 className="animate-spin text-indigo-600" size={14} /> : (
-                          <>
-                            {order.status !== 'CONFIRMED' && <button onClick={() => handleUpdateStatus(order.id, 'CONFIRMED')} className="p-1.5 bg-emerald-50 text-emerald-600 rounded-lg hover:bg-emerald-600 hover:text-white transition-all border border-emerald-100" title="Xác nhận đơn"><CheckCircle2 size={14} /></button>}
-                            {order.status !== 'REJECTED' && <button onClick={() => handleUpdateStatus(order.id, 'REJECTED')} className="p-1.5 bg-rose-50 text-rose-600 rounded-lg hover:bg-rose-600 hover:text-white transition-all border border-rose-100" title="Từ chối đơn"><XCircle size={14} /></button>}
-                          </>
-                        )}
+                    <td className="px-3 py-2">
+                      <div className="text-[11px] font-black text-slate-800 leading-tight">
+                        {depTime} <span className="text-slate-300">-</span> <span className="text-indigo-600">{arrTime}</span>
+                      </div>
+                      <div className="text-[9px] font-bold text-slate-600 mt-0.5">{depDate}</div>
+                    </td>
+                    <td className="px-3 py-2 text-center">
+                      <div className="flex flex-col items-center gap-1.5">
+                        <span className={`inline-flex px-2 py-0.5 rounded-lg text-[8px] font-black uppercase border ${order.status === 'CONFIRMED' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : order.status === 'REJECTED' ? 'bg-rose-50 text-rose-600 border-rose-100' : 'bg-amber-50 text-amber-600 border-amber-100'}`}>
+                          {order.status === 'CONFIRMED' ? 'DUYỆT' : order.status === 'REJECTED' ? 'HỦY' : 'CHỜ'}
+                        </span>
+                        <div className="flex gap-1.5">
+                          {actionLoading === order.id ? <Loader2 className="animate-spin text-indigo-600" size={10} /> : (
+                            order.status === 'PENDING' && (
+                              <>
+                                <button onClick={() => handleUpdateStatus(order.id, 'CONFIRMED')} className="p-1 bg-emerald-50 text-emerald-600 rounded-md border border-emerald-100 hover:bg-emerald-600 hover:text-white transition-all"><CheckCircle2 size={12} /></button>
+                                <button onClick={() => handleUpdateStatus(order.id, 'REJECTED')} className="p-1 bg-rose-50 text-rose-600 rounded-md border border-rose-100 hover:bg-rose-600 hover:text-white transition-all"><XCircle size={12} /></button>
+                              </>
+                            )
+                          )}
+                        </div>
                       </div>
                     </td>
                   </tr>
                 );
-              })}
+              }) : (
+                <tr>
+                  <td colSpan={6} className="px-6 py-20 text-center italic text-slate-400 text-xs">Chưa có đơn hàng nào</td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
