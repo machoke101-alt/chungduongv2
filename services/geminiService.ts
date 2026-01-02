@@ -1,8 +1,6 @@
 
-import { GoogleGenAI, Type } from "@google/genai";
+import { GoogleGenAI } from "@google/genai";
 import { LOCAL_LOCATIONS } from "./locationData";
-
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
 /**
  * Tìm kiếm địa chỉ hành chính từ bộ nhớ cục bộ (Hà Nội & Giao Thủy)
@@ -29,28 +27,33 @@ export const searchPlaces = async (query: string) => {
 
 export const getRouteDetails = async (origin: string, destination: string) => {
   try {
+    // Khởi tạo bên trong hàm để tránh crash app lúc khởi động nếu API Key chưa có
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
+      model: "gemini-3-flash-preview",
       contents: `Phân tích lộ trình từ "${origin}" đến "${destination}". Tính quãng đường và thời gian dự kiến.`,
-      config: { tools: [{ googleMaps: {} }] },
+      config: { tools: [{ googleSearch: {} }] },
     });
     return { text: response.text, links: [] };
   } catch (error) {
+    console.error("Gemini API Error:", error);
     return null;
   }
 };
 
 export const chatWithAssistant = async (message: string, context: string) => {
   try {
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     const response = await ai.models.generateContent({
       model: "gemini-3-flash-preview",
       contents: `Context: ${context}\n\nUser: ${message}`,
       config: {
-        systemInstruction: "Bạn là trợ lý TripEase. Trả lời ngắn gọn, tập trung vào giá xe và lộ trình tại Việt Nam."
+        systemInstruction: "Bạn là trợ lý TripEase. Trả lời ngắn gọn, tập trung vào giá xe và lộ trình tại Việt Nam. Sử dụng tông màu Xanh Phỉ Thuý trong giao tiếp."
       }
     });
     return response.text;
   } catch (error) {
-    return "Xin lỗi, tôi đang bận một chút.";
+    console.error("Gemini Chat Error:", error);
+    return "Xin lỗi, tôi đang gặp khó khăn khi kết nối. Bạn vui lòng thử lại sau nhé!";
   }
 };
