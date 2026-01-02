@@ -1,10 +1,10 @@
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Shield, Search, Phone, Loader2, ArrowUpDown, Trash2, ChevronDown, Check, Car, Ticket, Trophy, Star, Medal, Zap, CalendarDays } from 'lucide-react';
-import { Profile, UserRole } from '../types';
-import { supabase } from '../lib/supabase';
-import CopyableCode from './CopyableCode';
-import { UnifiedDropdown } from './SearchTrips';
+import { Profile, UserRole } from '../types.ts';
+import { supabase } from '../lib/supabase.ts';
+import CopyableCode from './CopyableCode.tsx';
+import { UnifiedDropdown } from './SearchTrips.tsx';
 
 type SortConfig = { key: string; direction: 'asc' | 'desc' | null };
 
@@ -91,7 +91,7 @@ const AdminPanel: React.FC = () => {
       if (profileError) throw profileError;
       const { data: trips } = await supabase.from('trips').select('driver_id');
       const { data: bookings } = await supabase.from('bookings').select('passenger_id');
-      const userStats = profiles.map(p => ({
+      const userStats = (profiles || []).map(p => ({
         ...p,
         trips_count: trips?.filter(t => t.driver_id === p.id).length || 0,
         bookings_count: bookings?.filter(b => b.passenger_id === p.id).length || 0
