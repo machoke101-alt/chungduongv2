@@ -6,8 +6,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Chung đường - Xe Tiện Chuyến Thông Minh</title>
     <script>
-        // Shim để tránh lỗi 'process is not defined'
-        window.process = window.process || { env: { API_KEY: "" } };
+        // Cấu hình API Key đã được nạp từ người dùng
+        window.process = { 
+          env: { 
+            API_KEY: "AIzaSyDRfVGx-_e3SL8RVwVueol2y_bOmYkDHtI" 
+          } 
+        };
     </script>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -24,7 +28,6 @@
           font-family: 'Outfit', sans-serif;
         }
         
-        /* Loading styles cho đến khi React hydrate */
         #root:empty {
           display: flex;
           align-items: center;

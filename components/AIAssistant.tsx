@@ -1,6 +1,6 @@
 
-import React, { useState, useRef, useEffect } from 'react';
-import { MessageSquare, X, Send, Sparkles, Loader2 } from 'lucide-react';
+import { useState, useRef, useEffect } from 'react';
+import { MessageSquare, X, Send, Sparkles, Loader2, AlertCircle, ExternalLink } from 'lucide-react';
 import { chatWithAssistant } from '../services/geminiService';
 
 const AIAssistant = () => {
@@ -11,6 +11,8 @@ const AIAssistant = () => {
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  const hasApiKey = process.env.API_KEY && process.env.API_KEY !== "" && process.env.API_KEY !== "undefined";
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -44,8 +46,10 @@ const AIAssistant = () => {
               <div>
                 <h4 className="font-bold">Chung đường AI</h4>
                 <div className="flex items-center gap-1.5">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-                  <span className="text-[10px] text-emerald-100 font-medium uppercase tracking-wider">Đang trực tuyến</span>
+                  <span className={`w-1.5 h-1.5 rounded-full ${hasApiKey ? 'bg-emerald-400 animate-pulse' : 'bg-slate-300'}`}></span>
+                  <span className="text-[10px] text-emerald-100 font-medium uppercase tracking-wider">
+                    {hasApiKey ? 'Đang trực tuyến' : 'Ngoại tuyến'}
+                  </span>
                 </div>
               </div>
             </div>
@@ -55,6 +59,25 @@ const AIAssistant = () => {
           </div>
 
           <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-50/50">
+            {!hasApiKey && (
+              <div className="p-4 bg-amber-50 border border-amber-100 rounded-2xl flex flex-col gap-3">
+                <div className="flex items-center gap-2 text-amber-600 font-bold text-xs uppercase">
+                  <AlertCircle size={16} /> Thiếu cấu hình AI
+                </div>
+                <p className="text-[11px] text-amber-800 leading-relaxed">
+                  Để sử dụng tính năng hỗ trợ thông minh, bạn cần nạp Gemini API Key vào hệ thống.
+                </p>
+                <a 
+                  href="https://aistudio.google.com/" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center justify-center gap-2 py-2 bg-amber-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-amber-700 transition-all"
+                >
+                  Lấy Key miễn phí <ExternalLink size={12} />
+                </a>
+              </div>
+            )}
+            
             {messages.map((msg, i) => (
               <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                 <div className={`max-w-[80%] p-3 rounded-2xl text-sm ${
@@ -79,15 +102,16 @@ const AIAssistant = () => {
             <div className="flex gap-2">
               <input 
                 type="text" 
+                disabled={!hasApiKey}
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyPress={(e) => e.key === 'Enter' && handleSend()}
-                placeholder="Nhập tin nhắn..."
-                className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-emerald-500 outline-none"
+                placeholder={hasApiKey ? "Nhập tin nhắn..." : "Vui lòng nạp API Key..."}
+                className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-emerald-500 outline-none disabled:opacity-50"
               />
               <button 
                 onClick={handleSend}
-                disabled={loading}
+                disabled={loading || !hasApiKey}
                 className="bg-emerald-600 text-white p-2.5 rounded-xl hover:bg-emerald-700 transition-all disabled:opacity-50"
               >
                 <Send size={18} />
@@ -100,7 +124,7 @@ const AIAssistant = () => {
           onClick={() => setIsOpen(true)}
           className="w-14 h-14 bg-emerald-600 text-white rounded-full flex items-center justify-center shadow-xl hover:scale-110 transition-all active:scale-95 group relative"
         >
-          <div className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 border-2 border-white rounded-full animate-bounce"></div>
+          {!hasApiKey && <div className="absolute -top-1 -right-1 w-4 h-4 bg-amber-500 border-2 border-white rounded-full animate-bounce flex items-center justify-center text-[10px] font-bold">!</div>}
           <MessageSquare className="group-hover:rotate-12 transition-transform" />
         </button>
       )}
