@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo } from 'react';
 import { Booking, Trip } from '../types';
 import { 
@@ -33,6 +32,24 @@ const BookingsList: React.FC<BookingsListProps> = ({ bookings, trips, onRefresh 
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [showMapId, setShowMapId] = useState<string | null>(null);
 
+  // Hàm hỗ trợ lấy dữ liệu trip từ booking (xử lý cả dạng object và array từ Supabase join)
+  const getTripFromBooking = (booking: any): Trip | null => {
+    if (!booking) return null;
+    
+    // Ưu tiên dữ liệu đã join từ Supabase
+    let tripData = booking.trips;
+    if (Array.isArray(tripData) && tripData.length > 0) {
+      tripData = tripData[0];
+    }
+    
+    // Nếu không có dữ liệu join, tìm trong mảng trips được truyền vào
+    if (!tripData || !tripData.origin_name) {
+      tripData = trips.find(t => t.id === booking.trip_id);
+    }
+    
+    return (tripData && tripData.origin_name) ? tripData : null;
+  };
+
   const handleSort = (key: string) => {
     let direction: SortConfig['direction'] = 'asc';
     if (sortConfig.key === key && sortConfig.direction === 'asc') direction = 'desc';
@@ -42,12 +59,14 @@ const BookingsList: React.FC<BookingsListProps> = ({ bookings, trips, onRefresh 
 
   const filteredBookings = useMemo(() => {
     return bookings.filter(booking => {
-      const trip = (booking as any).trips || trips.find(t => t.id === booking.trip_id);
-      if (!trip) return false;
+      const trip = getTripFromBooking(booking);
+      // Nếu không tìm thấy thông tin chuyến xe, vẫn giữ lại đơn hàng để hiển thị lỗi thay vì ẩn hoàn toàn
       const bookingCode = `#ORD-${booking.id.substring(0, 5).toUpperCase()}`;
-      const route = `${trip.origin_name} ${trip.dest_name}`.toLowerCase();
+      const route = trip ? `${trip.origin_name} ${trip.dest_name}`.toLowerCase() : "";
+      
       const matchesSearch = bookingCode.includes(searchTerm.toUpperCase()) || route.includes(searchTerm.toLowerCase());
       const matchesStatus = statusFilter === 'ALL' || booking.status === statusFilter;
+      
       return matchesSearch && matchesStatus;
     });
   }, [bookings, trips, searchTerm, statusFilter]);
@@ -58,12 +77,14 @@ const BookingsList: React.FC<BookingsListProps> = ({ bookings, trips, onRefresh 
       sorted.sort((a: any, b: any) => {
         let valA = a[sortConfig.key];
         let valB = b[sortConfig.key];
+        
         if (sortConfig.key === 'departure_time') {
-          const tripA = a.trips || trips.find((t:any) => t.id === a.trip_id);
-          const tripB = b.trips || trips.find((t:any) => t.id === b.trip_id);
+          const tripA = getTripFromBooking(a);
+          const tripB = getTripFromBooking(b);
           valA = tripA?.departure_time || '';
           valB = tripB?.departure_time || '';
         }
+        
         if (valA < valB) return sortConfig.direction === 'asc' ? -1 : 1;
         if (valA > valB) return sortConfig.direction === 'asc' ? 1 : -1;
         return 0;
@@ -73,7 +94,7 @@ const BookingsList: React.FC<BookingsListProps> = ({ bookings, trips, onRefresh 
   }, [filteredBookings, sortConfig, trips]);
 
   const handleCancelBooking = async (bookingId: string) => {
-    if (!window.confirm('Bạn có chắc chắn muốn hủy yêu cầu đặt chỗ này?')) return;
+    if (!window.confirm('Xác nhận hủy yêu cầu đặt chỗ này?')) return;
     setActionLoading(bookingId);
     try {
       const { error } = await supabase.from('bookings').delete().eq('id', bookingId);
@@ -89,7 +110,7 @@ const BookingsList: React.FC<BookingsListProps> = ({ bookings, trips, onRefresh 
       onClick={() => handleSort(sortKey)}
     >
       <div className={`flex items-center gap-1.5 ${textAlign === 'text-center' ? 'justify-center' : textAlign === 'text-right' ? 'justify-end' : ''}`}>
-        {label} <ArrowUpDown size={10} className={`${sortConfig.key === sortKey ? 'text-indigo-600' : 'opacity-20'}`} />
+        {label} <ArrowUpDown size={10} className={`${sortConfig.key === sortKey ? 'text-emerald-600' : 'opacity-20'}`} />
       </div>
     </th>
   );
@@ -105,7 +126,7 @@ const BookingsList: React.FC<BookingsListProps> = ({ bookings, trips, onRefresh 
         <div className="flex items-center gap-2 w-full md:w-auto">
           <UnifiedDropdown label="Trạng thái" icon={Clock} value={statusFilter} onChange={setStatusFilter}
             options={[{label:'Tất cả', value:'ALL'}, {label:'Đang chờ', value:'PENDING'}, {label:'Xác nhận', value:'CONFIRMED'}, {label:'Bị từ chối', value:'REJECTED'}]} />
-          <button onClick={() => onRefresh?.()} className="p-2 bg-slate-50 rounded-xl hover:bg-indigo-50 text-slate-400 hover:text-indigo-600 transition-colors border border-slate-200">
+          <button onClick={() => onRefresh?.()} className="p-2 bg-slate-50 rounded-xl hover:bg-emerald-50 text-slate-400 hover:text-emerald-600 transition-colors border border-slate-200">
             <RefreshCcw size={14} />
           </button>
         </div>
@@ -116,21 +137,44 @@ const BookingsList: React.FC<BookingsListProps> = ({ bookings, trips, onRefresh 
           <table className="w-full text-left table-fixed min-w-full">
             <thead>
               <tr className="bg-slate-50/50 border-b border-slate-100">
-                <SortHeader label="MÃ ĐƠN" sortKey="created_at" width="15%" />
-                <SortHeader label="LỘ TRÌNH" sortKey="origin_name" width="30%" />
-                <SortHeader label="LỊCH TRÌNH" sortKey="departure_time" width="25%" />
-                <SortHeader label="GIÁ" sortKey="total_price" width="15%" textAlign="text-right" hideOnMobile={true} />
-                <SortHeader label="TRẠNG THÁI" sortKey="status" width="15%" textAlign="text-center" />
+                <SortHeader label="Mã đơn" sortKey="created_at" width="15%" />
+                <SortHeader label="Lộ trình" sortKey="origin_name" width="30%" />
+                <SortHeader label="Lịch trình" sortKey="departure_time" width="25%" />
+                <SortHeader label="Giá" sortKey="total_price" width="15%" textAlign="text-right" hideOnMobile={true} />
+                <SortHeader label="Trạng thái" sortKey="status" width="15%" textAlign="text-center" />
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-50">
               {sortedBookings.length > 0 ? sortedBookings.map(booking => {
-                const trip = (booking as any).trips || trips.find(t => t.id === booking.trip_id);
-                if (!trip) return null;
+                const trip = getTripFromBooking(booking);
                 const bookingCode = `#ORD-${booking.id.substring(0, 5).toUpperCase()}`;
                 const isRejected = booking.status === 'REJECTED';
                 const isConfirmed = booking.status === 'CONFIRMED';
                 const isMapVisible = showMapId === booking.id;
+                
+                // Trường hợp trip bị xóa hoặc không tìm thấy dữ liệu đồng bộ
+                if (!trip) {
+                  return (
+                    <tr key={booking.id} className="opacity-60 bg-slate-50/30">
+                      <td className="px-3 py-3">
+                        <div className="text-[10px] font-black text-slate-900">{bookingCode}</div>
+                        <div className="text-[8px] font-bold text-slate-400 mt-0.5">{new Date(booking.created_at).toLocaleDateString('vi-VN')}</div>
+                      </td>
+                      <td colSpan={2} className="px-3 py-3">
+                        <div className="flex items-center gap-2 text-rose-500 font-bold text-[10px]">
+                           <AlertCircle size={12} /> Chuyến xe không còn tồn tại hoặc đang tải...
+                        </div>
+                      </td>
+                      <td className="px-3 py-3 text-right hidden md:table-cell">
+                        <div className="text-[11px] font-black text-slate-400">{new Intl.NumberFormat('vi-VN').format(booking.total_price)}đ</div>
+                      </td>
+                      <td className="px-3 py-3 text-center">
+                        <span className="text-[8px] font-black text-slate-400">N/A</span>
+                      </td>
+                    </tr>
+                  );
+                }
+
                 const depTime = new Date(trip.departure_time).toLocaleTimeString('vi-VN', {hour:'2-digit', minute:'2-digit'});
                 const arrTime = trip.arrival_time ? new Date(trip.arrival_time).toLocaleTimeString('vi-VN', {hour:'2-digit', minute:'2-digit'}) : '--:--';
 
@@ -161,11 +205,11 @@ const BookingsList: React.FC<BookingsListProps> = ({ bookings, trips, onRefresh 
                         <div className="flex items-center gap-1.5">
                           <span className="text-[11px] font-bold text-slate-800">{depTime}</span>
                           <span className="text-slate-200">-</span>
-                          <span className="text-[11px] font-bold text-indigo-500">{arrTime}</span>
+                          <span className="text-[11px] font-bold text-emerald-500">{arrTime}</span>
                         </div>
                       </td>
                       <td className="px-3 py-3 text-right hidden md:table-cell">
-                        <div className="text-[11px] font-black text-indigo-600">{new Intl.NumberFormat('vi-VN').format(booking.total_price)}đ</div>
+                        <div className="text-[11px] font-black text-emerald-600">{new Intl.NumberFormat('vi-VN').format(booking.total_price)}đ</div>
                         <div className="text-[8px] font-bold text-slate-400">{booking.seats_booked} ghế</div>
                       </td>
                       <td className="px-3 py-3 text-center">
@@ -184,10 +228,10 @@ const BookingsList: React.FC<BookingsListProps> = ({ bookings, trips, onRefresh 
                               <div className="w-full sm:w-48 flex flex-col gap-2">
                                 <div className="p-3 bg-white rounded-xl border border-slate-200">
                                    <p className="text-[8px] font-black text-slate-400 uppercase mb-1">Thanh toán</p>
-                                   <p className="text-sm font-black text-indigo-600">{new Intl.NumberFormat('vi-VN').format(booking.total_price)}đ</p>
+                                   <p className="text-sm font-black text-emerald-600">{new Intl.NumberFormat('vi-VN').format(booking.total_price)}đ</p>
                                 </div>
                                 {booking.status === 'PENDING' && (
-                                  <button onClick={(e) => { e.stopPropagation(); handleCancelBooking(booking.id); }} className="w-full py-2 bg-rose-50 text-rose-600 text-[10px] font-bold rounded-xl border border-rose-100 hover:bg-rose-600 hover:text-white transition-all">HỦY YÊU CẦU</button>
+                                  <button onClick={(e) => { e.stopPropagation(); handleCancelBooking(booking.id); }} className="w-full py-2 bg-rose-50 text-rose-600 text-[10px] font-bold rounded-xl border border-rose-100 hover:bg-rose-600 hover:text-white transition-all">Hủy yêu cầu</button>
                                 )}
                               </div>
                            </div>

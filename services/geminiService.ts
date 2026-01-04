@@ -1,6 +1,6 @@
 
 import { GoogleGenAI } from "@google/genai";
-import { LOCAL_LOCATIONS } from "./locationData";
+import { LOCAL_LOCATIONS } from "./locationData.ts";
 
 /**
  * Tìm kiếm địa chỉ hành chính từ bộ nhớ cục bộ (Hà Nội & Giao Thủy)
@@ -50,7 +50,7 @@ export const chatWithAssistant = async (message: string, context: string) => {
       model: "gemini-3-flash-preview",
       contents: `Context: ${context}\n\nUser: ${message}`,
       config: {
-        systemInstruction: "Bạn là trợ lý TripEase. Trả lời ngắn gọn, tập trung vào giá xe và lộ trình tại Việt Nam. Sử dụng tông màu Xanh Phỉ Thuý trong giao tiếp."
+        systemInstruction: "Bạn là trợ lý Chung đường. Trả lời ngắn gọn, tập trung vào giá xe và lộ trình tại Việt Nam. Sử dụng phong cách thân thiện, chuyên nghiệp."
       }
     });
     return response.text;

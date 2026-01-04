@@ -26,7 +26,7 @@ const RoadAnimation = () => {
           {days.map((day, i) => (
             <div key={i} className="day-container flex flex-col items-center gap-1 group cursor-default">
               <div className="day-dot"></div>
-              <span className="text-[7px] font-black text-slate-400 uppercase tracking-tighter group-hover:text-emerald-600 transition-colors">
+              <span className="text-[7px] font-bold text-slate-400 group-hover:text-emerald-600 transition-colors">
                 {day}
               </span>
             </div>
@@ -55,29 +55,27 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab, noti
   }, [activeTab]);
 
   const navItems = [
-    { id: 'search', label: 'Tìm Chuyến', icon: Search },
+    { id: 'search', label: 'Tìm chuyến', icon: Search },
     { id: 'bookings', label: 'Lịch sử chuyến', icon: Ticket },
   ];
 
   const manageItems = [
     { id: 'dashboard', label: 'Thống kê', icon: LayoutDashboard, roles: ['admin', 'manager', 'driver'] },
-    { id: 'manage-trips', label: 'Chuyến Xe', icon: ClipboardList, roles: ['admin', 'manager', 'driver'] },
-    { id: 'manage-orders', label: 'Đơn Hàng', icon: ShoppingBag, roles: ['admin', 'manager', 'driver'] },
+    { id: 'manage-trips', label: 'Chuyến xe', icon: ClipboardList, roles: ['admin', 'manager', 'driver'] },
+    { id: 'manage-orders', label: 'Đơn hàng', icon: ShoppingBag, roles: ['admin', 'manager', 'driver'] },
     { id: 'admin', label: 'Hệ thống', icon: Shield, roles: ['admin'] },
   ];
 
   const allPossibleItems = [
     ...navItems, 
     ...manageItems, 
-    { id: 'post', label: 'Đăng Chuyến', icon: PlusCircle },
-    { id: 'profile', label: 'Hồ Sơ', icon: User }
+    { id: 'post', label: 'Đăng chuyến', icon: PlusCircle },
+    { id: 'profile', label: 'Hồ sơ', icon: User }
   ];
 
   const activeItem = allPossibleItems.find(item => item.id === activeTab);
   const ActiveIcon = activeItem?.icon || Car;
   const activeLabel = activeItem?.label || 'Chung đường';
-
-  const isManageTabActive = ['dashboard', 'manage-trips', 'manage-orders', 'admin'].includes(activeTab);
 
   return (
     <div className="flex h-screen bg-[#F8FAFC] overflow-hidden flex-col lg:flex-row">
@@ -93,7 +91,7 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab, noti
         </div>
         
         <nav className="flex-1 space-y-1.5 overflow-y-auto custom-scrollbar pr-2">
-          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.15em] mb-4 px-3">Cá nhân</p>
+          <p className="text-[11px] font-bold text-slate-400 mb-4 px-3">Cá nhân</p>
           {navItems.map((item) => (
             <button
               key={item.id}
@@ -109,7 +107,7 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab, noti
 
           {isStaff && (
             <>
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.15em] mt-8 mb-4 px-3">Điều hành</p>
+              <p className="text-[11px] font-bold text-slate-400 mt-8 mb-4 px-3">Điều hành</p>
               {manageItems.filter(item => item.roles.includes(profile?.role || '')).map(item => (
                 <button
                   key={item.id}
@@ -129,7 +127,7 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab, noti
                 }`}
               >
                 <PlusCircle size={18} className={activeTab === 'post' ? 'text-white' : 'text-slate-400 group-hover:text-emerald-600'} />
-                <span className="text-sm">Đăng Chuyến Mới</span>
+                <span className="text-sm">Đăng chuyến mới</span>
               </button>
             </>
           )}
@@ -144,11 +142,11 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab, noti
                 </div>
                 <div className="min-w-0 text-left">
                   <p className="text-xs font-bold text-slate-800 truncate leading-tight">{profile.full_name}</p>
-                  <p className="text-[9px] font-semibold text-emerald-500 uppercase tracking-widest mt-1">{profile.role}</p>
+                  <p className="text-[10px] font-semibold text-emerald-500 mt-1">{profile.role === 'admin' ? 'Quản trị' : profile.role === 'driver' ? 'Tài xế' : 'Người dùng'}</p>
                 </div>
               </div>
               <div className="flex gap-2">
-                <button onClick={() => setActiveTab('profile')} className="flex-1 py-2 bg-white text-slate-400 rounded-xl hover:text-emerald-600 border border-slate-100 flex items-center justify-center gap-2 transition-colors"><Settings size={12} /><span className="text-[9px] font-bold uppercase">Hồ sơ</span></button>
+                <button onClick={() => setActiveTab('profile')} className="flex-1 py-2 bg-white text-slate-400 rounded-xl hover:text-emerald-600 border border-slate-100 flex items-center justify-center gap-2 transition-colors"><Settings size={12} /><span className="text-xs font-bold">Hồ sơ</span></button>
                 <button onClick={() => supabase.auth.signOut()} className="p-2 bg-white text-slate-400 rounded-xl hover:text-rose-600 border border-slate-100 transition-all"><LogOut size={14} /></button>
               </div>
             </div>
@@ -167,7 +165,7 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab, noti
             </div>
             <div className="flex items-center gap-2.5">
               <ActiveIcon size={20} className="text-emerald-600 shrink-0" />
-              <h2 className="text-lg sm:text-xl font-bold text-slate-900 tracking-tight truncate max-w-[180px] font-outfit uppercase">
+              <h2 className="text-lg sm:text-xl font-bold text-slate-900 tracking-tight truncate max-w-[180px] font-outfit">
                 {activeLabel}
               </h2>
             </div>
@@ -180,15 +178,6 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab, noti
               <Bell size={20} />
               {notifications.filter(n => !n.read).length > 0 && <span className="absolute top-1.5 right-1.5 w-4 h-4 bg-rose-500 text-white text-[8px] font-bold flex items-center justify-center rounded-full border-2 border-white">{notifications.filter(n => !n.read).length}</span>}
             </button>
-            <div className="h-8 w-px bg-slate-100 mx-1"></div>
-            {profile ? (
-              <button onClick={() => setActiveTab('profile')} className="flex items-center gap-2 p-1.5 bg-slate-50 border border-slate-100 rounded-xl">
-                <div className="h-7 w-7 rounded-lg bg-emerald-600 flex items-center justify-center text-white text-[10px] font-bold">{profile.full_name?.charAt(0) || 'U'}</div>
-                <div className="hidden sm:block text-left"><p className="text-[11px] font-bold text-slate-800 leading-none">{profile.full_name}</p></div>
-              </button>
-            ) : (
-              <button onClick={onLoginClick} className="p-2 text-emerald-600 bg-emerald-50 rounded-xl transition-colors"><LogIn size={20} /></button>
-            )}
           </div>
         </header>
 
@@ -196,71 +185,25 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab, noti
           {children}
         </div>
 
-        {/* Mobile Management Drawer */}
-        {showManageMenu && (
-          <div className="lg:hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[60] animate-in fade-in duration-300" onClick={() => setShowManageMenu(false)}>
-            <div className="absolute bottom-0 left-0 right-0 bg-white rounded-t-[40px] p-8 pb-32 animate-in slide-in-from-bottom-10 duration-500 shadow-2xl" onClick={e => e.stopPropagation()}>
-              <div className="flex items-center justify-between mb-8">
-                <div>
-                   <h3 className="text-xl font-bold text-slate-900 uppercase italic font-outfit">Điều hành</h3>
-                   <p className="text-slate-400 text-xs font-medium">Lựa chọn công cụ điều phối</p>
-                </div>
-                <button onClick={() => setShowManageMenu(false)} className="p-3 bg-slate-100 text-slate-400 rounded-2xl hover:bg-rose-50 hover:text-rose-600 transition-all"><X size={20} /></button>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                {manageItems.filter(item => item.roles.includes(profile?.role || '')).map(item => (
-                  <button
-                    key={item.id}
-                    onClick={() => { setActiveTab(item.id); setShowManageMenu(false); }}
-                    className={`flex flex-col items-center gap-3 p-6 rounded-[32px] border transition-all ${
-                      activeTab === item.id 
-                      ? 'bg-emerald-600 text-white border-emerald-600 shadow-xl shadow-emerald-100' 
-                      : 'bg-slate-50 text-slate-500 border-slate-100'
-                    }`}
-                  >
-                    <item.icon size={28} />
-                    <span className="text-[10px] font-bold uppercase tracking-widest text-center">{item.label}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
-
         {/* Bottom Navigation Mobile */}
         <nav className="lg:hidden fixed bottom-6 left-4 right-4 z-[70]">
           <div className="bg-white/90 backdrop-blur-xl border border-white/40 shadow-2xl rounded-[32px] px-2 py-2 flex items-center justify-around">
             <button onClick={() => setActiveTab('search')} className={`flex flex-col items-center gap-1 p-3 flex-1 transition-all ${activeTab === 'search' ? 'text-emerald-600' : 'text-slate-400'}`}>
               <Search size={22} className={activeTab === 'search' ? 'scale-110' : ''} />
-              <span className="text-[9px] font-bold uppercase tracking-widest">Tìm kiếm</span>
-              {activeTab === 'search' && <div className="w-1 h-1 bg-emerald-600 rounded-full mt-0.5"></div>}
+              <span className="text-[10px] font-bold">Tìm kiếm</span>
             </button>
-
             <button onClick={() => setActiveTab('bookings')} className={`flex flex-col items-center gap-1 p-3 flex-1 transition-all ${activeTab === 'bookings' ? 'text-emerald-600' : 'text-slate-400'}`}>
               <Ticket size={22} className={activeTab === 'bookings' ? 'scale-110' : ''} />
-              <span className="text-[9px] font-bold uppercase tracking-widest">Lịch sử</span>
-              {activeTab === 'bookings' && <div className="w-1 h-1 bg-emerald-600 rounded-full mt-0.5"></div>}
+              <span className="text-[10px] font-bold">Lịch sử</span>
             </button>
-
             {isStaff && (
-              <button onClick={() => setActiveTab('post')} className={`flex flex-col items-center justify-center h-16 w-16 bg-emerald-600 text-white rounded-[24px] shadow-lg shadow-emerald-100 -translate-y-4 scale-110 active:scale-95 transition-all ${activeTab === 'post' ? 'ring-4 ring-emerald-100' : ''}`}>
+              <button onClick={() => setActiveTab('post')} className="flex flex-col items-center justify-center h-16 w-16 bg-emerald-600 text-white rounded-[24px] shadow-lg shadow-emerald-100 -translate-y-4 scale-110 active:scale-95 transition-all">
                 <PlusCircle size={26} />
               </button>
             )}
-
-            {isStaff && (
-               <button onClick={() => setShowManageMenu(true)} className={`flex flex-col items-center gap-1 p-3 flex-1 transition-all ${isManageTabActive ? 'text-emerald-600' : 'text-slate-400'}`}>
-                <LayoutDashboard size={22} className={isManageTabActive ? 'scale-110' : ''} />
-                <span className="text-[9px] font-bold uppercase tracking-widest">Quản lý</span>
-                {isManageTabActive && <div className="w-1 h-1 bg-emerald-600 rounded-full mt-0.5"></div>}
-              </button>
-            )}
-
             <button onClick={() => setActiveTab('profile')} className={`flex flex-col items-center gap-1 p-3 flex-1 transition-all ${activeTab === 'profile' ? 'text-emerald-600' : 'text-slate-400'}`}>
               <User size={22} className={activeTab === 'profile' ? 'scale-110' : ''} />
-              <span className="text-[9px] font-bold uppercase tracking-widest">Hồ sơ</span>
-              {activeTab === 'profile' && <div className="w-1 h-1 bg-emerald-600 rounded-full mt-0.5"></div>}
+              <span className="text-[10px] font-bold">Hồ sơ</span>
             </button>
           </div>
         </nav>

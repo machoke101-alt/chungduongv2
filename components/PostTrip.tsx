@@ -1,6 +1,5 @@
-
 import React, { useState, useEffect, useRef } from 'react';
-import { Sparkles, MapPin, Calendar, Users, Car, CheckCircle2, Navigation, Clock, Repeat, ChevronDown, Banknote, Loader2, AlertTriangle, Info, ArrowRight } from 'lucide-react';
+import { Sparkles, MapPin, Calendar, Users, Car, CheckCircle2, Navigation, Clock, Repeat, ChevronDown, Banknote, Loader2, AlertTriangle, Info, ArrowRight, DollarSign } from 'lucide-react';
 import { searchPlaces, getRouteDetails } from '../services/geminiService.ts';
 import CustomDatePicker from './CustomDatePicker.tsx';
 import CustomTimePicker from './CustomTimePicker.tsx';
@@ -22,6 +21,14 @@ const getTodayFormatted = () => {
   return `${d}-${m}-${y}`;
 };
 
+const priceSuggestions = [
+  { label: '100K', value: 100000 },
+  { label: '150K', value: 150000 },
+  { label: '200K', value: 200000 },
+  { label: '250K', value: 250000 },
+  { label: '300K', value: 300000 },
+];
+
 const PostTrip: React.FC<PostTripProps> = ({ onPost }) => {
   const [origin, setOrigin] = useState('');
   const [originDetail, setOriginDetail] = useState('');
@@ -31,11 +38,12 @@ const PostTrip: React.FC<PostTripProps> = ({ onPost }) => {
   const [destUri, setDestUri] = useState('');
   
   const [vehicle, setVehicle] = useState('Sedan 4 chỗ');
+  const [licensePlate, setLicensePlate] = useState('');
   const [date, setDate] = useState(getTodayFormatted());
   const [time, setTime] = useState('08:00');
   const [arrivalTime, setArrivalTime] = useState('10:00');
   const [seats, setSeats] = useState(4);
-  const [price, setPrice] = useState('');
+  const [price, setPrice] = useState('150000'); // Lưu giá trị thô dạng chuỗi
   const [loading, setLoading] = useState(false);
   const [analyzingRoute, setAnalyzingRoute] = useState(false);
   const [routeData, setRouteData] = useState<any>(null);
@@ -56,6 +64,13 @@ const PostTrip: React.FC<PostTripProps> = ({ onPost }) => {
   const arrivalTimePickerRef = useRef<HTMLDivElement>(null);
   const originRef = useRef<HTMLDivElement>(null);
   const destRef = useRef<HTMLDivElement>(null);
+
+  // Hàm định dạng số có dấu chấm
+  const formatNumber = (num: string) => {
+    if (!num) return "";
+    const value = num.replace(/\D/g, "");
+    return value.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+  };
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -116,8 +131,15 @@ const PostTrip: React.FC<PostTripProps> = ({ onPost }) => {
     e.preventDefault();
     setError(null);
 
-    if (!origin || !destination || (!isRecurring && !date) || (isRecurring && selectedDays.length === 0) || !price) {
+    const rawPrice = price.replace(/\D/g, "");
+
+    if (!origin || !destination || (!isRecurring && !date) || (isRecurring && selectedDays.length === 0) || !rawPrice || !licensePlate) {
       setError("Vui lòng điền đầy đủ thông tin!");
+      return;
+    }
+
+    if (parseInt(rawPrice) <= 0) {
+      setError("Giá không hợp lệ.");
       return;
     }
 
@@ -164,10 +186,10 @@ const PostTrip: React.FC<PostTripProps> = ({ onPost }) => {
     const tripBase = {
       origin: { name: origin, description: originDetail, mapsUrl: originUri },
       destination: { name: destination, description: destDetail, mapsUrl: destUri },
-      price: parseInt(price),
+      price: parseInt(rawPrice),
       seats: seats,
       availableSeats: seats,
-      vehicleInfo: vehicle,
+      vehicleInfo: `${vehicle} (${licensePlate})`,
       isRecurring: isRecurring,
       recurringDays: selectedDays
     };
@@ -189,31 +211,20 @@ const PostTrip: React.FC<PostTripProps> = ({ onPost }) => {
 
   return (
     <div className="max-w-4xl mx-auto animate-slide-up">
-      <form onSubmit={handleSubmit} className="bg-white rounded-[24px] border border-slate-200 shadow-sm overflow-hidden">
-        <div className="px-6 py-5 bg-emerald-600 text-white flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-white/20 rounded-xl">
-              <Car size={20} />
-            </div>
-            <div>
-              <h2 className="text-lg font-bold tracking-tight uppercase">ĐĂNG CHUYẾN NHANH</h2>
-              <p className="text-emerald-100 text-[10px] font-medium uppercase tracking-wider">Hệ thống xe tiện chuyến thông minh</p>
-            </div>
-          </div>
-          <Sparkles className="text-white/20 w-8 h-8" />
-        </div>
-
+      <form onSubmit={handleSubmit} className="bg-white rounded-[32px] border border-slate-200 shadow-xl overflow-hidden">
+        {/* Removed Header for space optimization */}
+        
         {error && (
           <div className="mx-6 mt-6 p-4 bg-rose-50 border border-rose-100 rounded-2xl flex items-center gap-3 text-rose-600">
             <AlertTriangle size={20} className="shrink-0" />
-            <p className="text-xs font-black uppercase tracking-tight">{error}</p>
+            <p className="text-xs font-bold">{error}</p>
           </div>
         )}
 
-        <div className="p-6 grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div className="p-8 grid grid-cols-1 lg:grid-cols-2 gap-8">
           <div className="space-y-6">
-            <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
-              <Navigation size={12} /> LỘ TRÌNH CHI TIẾT
+            <h3 className="text-sm font-bold text-slate-400 flex items-center gap-2">
+              <Navigation size={12} /> Lộ trình chi tiết
             </h3>
             
             <div className="space-y-4 relative">
@@ -225,16 +236,16 @@ const PostTrip: React.FC<PostTripProps> = ({ onPost }) => {
                     <Navigation size={16} />
                   </div>
                   <div className="flex-1 space-y-2">
-                    <label className="text-[9px] font-bold text-slate-500 uppercase ml-1">Điểm đón</label>
+                    <label className="text-xs font-semibold text-slate-500 ml-1">Điểm đón</label>
                     <input 
                       type="text" value={origin} onChange={(e) => { setOrigin(e.target.value); setOriginUri(''); setError(null); }}
-                      placeholder="Tìm quận, huyện..." required
+                      placeholder="Tìm địa chỉ đón..." required
                       className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none transition-all font-bold text-sm text-slate-900 placeholder:text-slate-400"
                     />
                     <input 
                       type="text" value={originDetail} onChange={(e) => setOriginDetail(e.target.value)}
-                      placeholder="Địa chỉ cụ thể, số nhà..."
-                      className="w-full px-4 py-2 bg-white border border-slate-100 rounded-lg outline-none text-[11px] italic text-slate-600"
+                      placeholder="Số nhà, ngõ ngách..."
+                      className="w-full px-4 py-2 bg-white border border-slate-100 rounded-lg outline-none text-xs italic text-slate-600"
                     />
                   </div>
                 </div>
@@ -254,16 +265,16 @@ const PostTrip: React.FC<PostTripProps> = ({ onPost }) => {
                     <MapPin size={16} />
                   </div>
                   <div className="flex-1 space-y-2">
-                    <label className="text-[9px] font-bold text-slate-500 uppercase ml-1">Điểm trả</label>
+                    <label className="text-xs font-semibold text-slate-500 ml-1">Điểm trả</label>
                     <input 
                       type="text" value={destination} onChange={(e) => { setDestination(e.target.value); setDestUri(''); setError(null); }}
-                      placeholder="Tìm xã, thị trấn..." required
+                      placeholder="Tìm địa chỉ trả..." required
                       className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none transition-all font-bold text-sm text-slate-900 placeholder:text-slate-400"
                     />
                     <input 
                       type="text" value={destDetail} onChange={(e) => setDestDetail(e.target.value)}
                       placeholder="Ghi chú điểm trả..."
-                      className="w-full px-4 py-2 bg-white border border-slate-100 rounded-lg outline-none text-[11px] italic text-slate-600"
+                      className="w-full px-4 py-2 bg-white border border-slate-100 rounded-lg outline-none text-xs italic text-slate-600"
                     />
                   </div>
                 </div>
@@ -284,8 +295,8 @@ const PostTrip: React.FC<PostTripProps> = ({ onPost }) => {
                   {analyzingRoute ? <Loader2 size={16} className="animate-spin" /> : <Info size={16} />}
                 </div>
                 <div className="min-w-0">
-                  <p className="text-[10px] font-black text-indigo-400 uppercase tracking-widest">Phân tích lộ trình Gemini</p>
-                  <p className="text-[11px] font-bold text-indigo-800">
+                  <p className="text-[10px] font-bold text-indigo-400 uppercase tracking-widest">Phân tích lộ trình Gemini</p>
+                  <p className="text-xs font-semibold text-indigo-800">
                     {analyzingRoute ? "Đang tính toán..." : `Quãng đường: ${routeData.distance} - Thời gian: ${routeData.duration_text}`}
                   </p>
                 </div>
@@ -294,15 +305,15 @@ const PostTrip: React.FC<PostTripProps> = ({ onPost }) => {
           </div>
 
           <div className="space-y-6">
-            <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
-              <Clock size={12} /> THỜI GIAN & CHI PHÍ
+            <h3 className="text-sm font-bold text-slate-400 flex items-center gap-2">
+              <Clock size={12} /> Thời gian & chi phí
             </h3>
 
             <div className="bg-slate-50/50 p-4 rounded-2xl border border-slate-100 space-y-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <div className="p-1.5 bg-emerald-100 text-emerald-600 rounded-lg"><Repeat size={14} /></div>
-                  <span className="text-[10px] font-bold text-slate-700 uppercase">Chuyến định kỳ</span>
+                  <span className="text-xs font-bold text-slate-700">Chuyến định kỳ</span>
                 </div>
                 <button type="button" onClick={() => setIsRecurring(!isRecurring)}
                   className={`w-10 h-5 rounded-full transition-all relative ${isRecurring ? 'bg-emerald-600' : 'bg-slate-300'}`}>
@@ -324,7 +335,7 @@ const PostTrip: React.FC<PostTripProps> = ({ onPost }) => {
                   <div className="grid grid-cols-7 gap-1">
                     {DAYS_OF_WEEK.map(day => (
                       <button key={day.value} type="button" onClick={() => toggleDay(day.value)}
-                        className={`py-1.5 rounded-lg text-[9px] font-bold border ${selectedDays.includes(day.value) ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-white text-slate-400 border-slate-200'}`}>
+                        className={`py-1.5 rounded-lg text-xs font-bold border ${selectedDays.includes(day.value) ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-white text-slate-400 border-slate-200'}`}>
                         {day.label}
                       </button>
                     ))}
@@ -333,7 +344,7 @@ const PostTrip: React.FC<PostTripProps> = ({ onPost }) => {
 
                 <div className="flex items-center gap-3">
                   <div className="flex-1 space-y-1">
-                    <label className="text-[9px] font-bold text-slate-400 uppercase ml-1">Khởi hành</label>
+                    <label className="text-[11px] font-bold text-slate-400 ml-1">Khởi hành</label>
                     <div className="relative" ref={timePickerRef}>
                       <button type="button" onClick={() => setShowTimePicker(!showTimePicker)} className="w-full flex items-center justify-between px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-900">
                         <span>{time}</span><Clock size={14} className="text-emerald-400" />
@@ -343,7 +354,7 @@ const PostTrip: React.FC<PostTripProps> = ({ onPost }) => {
                   </div>
                   <div className="pt-5"><ArrowRight size={14} className="text-slate-300" /></div>
                   <div className="flex-1 space-y-1">
-                    <label className="text-[9px] font-bold text-slate-400 uppercase ml-1">Dự kiến đến</label>
+                    <label className="text-[11px] font-bold text-slate-400 ml-1">Dự kiến đến</label>
                     <div className="relative" ref={arrivalTimePickerRef}>
                       <button type="button" onClick={() => setShowArrivalTimePicker(!showArrivalTimePicker)} className={`w-full flex items-center justify-between px-4 py-2.5 bg-white border rounded-xl text-xs font-bold text-slate-900 ${analyzingRoute ? 'animate-pulse border-indigo-200' : 'border-slate-200'}`}>
                         <span>{arrivalTime}</span><Clock size={14} className="text-indigo-400" />
@@ -357,7 +368,7 @@ const PostTrip: React.FC<PostTripProps> = ({ onPost }) => {
 
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <label className="text-[9px] font-bold text-slate-500 uppercase ml-1">Loại xe</label>
+                <label className="text-xs font-semibold text-slate-500 ml-1">Loại xe</label>
                 <select value={vehicle} onChange={(e) => setVehicle(e.target.value)} 
                   className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl font-bold text-sm text-slate-900 outline-none">
                   <option>Sedan 4 chỗ</option>
@@ -366,27 +377,60 @@ const PostTrip: React.FC<PostTripProps> = ({ onPost }) => {
                 </select>
               </div>
               <div className="space-y-1.5">
-                <label className="text-[9px] font-bold text-slate-500 uppercase ml-1">Ghế trống</label>
+                <label className="text-xs font-semibold text-slate-500 ml-1">Ghế trống</label>
                 <input type="number" value={seats} onChange={(e) => setSeats(parseInt(e.target.value))} min="1"
                   className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl font-bold text-sm text-slate-900 outline-none" />
               </div>
             </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-slate-500 ml-1">Biển kiểm soát</label>
+              <input 
+                type="text" 
+                value={licensePlate} 
+                onChange={(e) => setLicensePlate(e.target.value.toUpperCase())}
+                placeholder="Ví dụ: 29A-XXXXX" 
+                required
+                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl font-bold text-sm text-slate-900 outline-none" 
+              />
+            </div>
             
             <div className="space-y-3">
-              <label className="text-[9px] font-bold text-slate-500 uppercase ml-1">Giá/Chỗ (VNĐ)</label>
+              <div className="flex justify-between items-center">
+                <label className="text-xs font-semibold text-slate-500 ml-1">Giá/Chỗ</label>
+                <div className="flex flex-wrap gap-2">
+                  {priceSuggestions.map((suggestion) => (
+                    <button
+                      key={suggestion.value}
+                      type="button"
+                      onClick={() => setPrice(suggestion.value.toString())}
+                      className="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-600 hover:bg-emerald-50 hover:text-emerald-600 transition-colors whitespace-nowrap"
+                    >
+                      {suggestion.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
               <div className="relative">
-                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-emerald-500 font-bold text-lg">₫</div>
-                <input type="number" value={price} onChange={(e) => setPrice(e.target.value)} placeholder="0" required 
-                  className="w-full pl-10 pr-4 py-3 bg-white border-2 border-slate-100 rounded-2xl text-2xl font-black text-emerald-600 focus:border-emerald-500 outline-none" />
+                <DollarSign className="absolute left-4 top-1/2 -translate-y-1/2 text-emerald-500" size={20} />
+                <input 
+                  type="text" 
+                  value={formatNumber(price)} 
+                  onChange={(e) => setPrice(e.target.value.replace(/\D/g, ""))} 
+                  placeholder="0" 
+                  required 
+                  className="w-full pl-12 pr-10 py-3 bg-white border-2 border-slate-100 rounded-2xl text-2xl font-black text-emerald-600 focus:border-emerald-500 outline-none text-right" 
+                />
+                <span className="absolute right-4 top-1/2 -translate-y-1/2 text-emerald-500 font-bold text-lg">đ</span>
               </div>
             </div>
 
             <button 
               type="submit" 
               disabled={loading}
-              className="w-full py-4 bg-emerald-600 text-white rounded-2xl font-bold text-sm hover:bg-emerald-700 shadow-lg transition-all flex items-center justify-center gap-2 disabled:opacity-70"
+              className="w-full py-4 bg-indigo-600 text-white rounded-2xl font-bold text-sm hover:bg-indigo-700 shadow-lg shadow-indigo-100 transition-all flex items-center justify-center gap-2 disabled:opacity-70 mt-4"
             >
-              {loading ? <Loader2 className="animate-spin" size={16} /> : <><Sparkles size={16} /> XÁC NHẬN ĐĂNG CHUYẾN</>}
+              {loading ? <Loader2 className="animate-spin" size={16} /> : <><Sparkles size={16} /> Xác nhận đăng chuyến</>}
             </button>
           </div>
         </div>

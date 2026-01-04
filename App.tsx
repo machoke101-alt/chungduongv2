@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 import Layout from './components/Layout.tsx';
 import Dashboard from './components/Dashboard.tsx';
@@ -13,11 +12,7 @@ import TripManagement from './components/TripManagement.tsx';
 import OrderManagement from './components/OrderManagement.tsx';
 import { Trip, Booking, TripStatus, Notification, Profile } from './types.ts';
 import { supabase } from './lib/supabase.ts';
-
-/**
- * SQL MIGRATION (Run this in Supabase SQL Editor):
- * ALTER TABLE trips ADD COLUMN IF NOT EXISTS arrival_time TIMESTAMPTZ;
- */
+import { getTripStatusDisplay } from './components/SearchTrips.tsx';
 
 const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState('search');
@@ -59,12 +54,17 @@ const App: React.FC = () => {
 
   const fetchUserBookings = useCallback(async (userId: string) => {
     if (!userId) return;
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('bookings')
       .select('*, trips(*)')
       .eq('passenger_id', userId)
       .order('created_at', { ascending: false });
-    if (data) setBookings(data || []);
+    
+    if (error) {
+      console.error("Error fetching bookings:", error);
+      return;
+    }
+    setBookings(data || []);
   }, []);
 
   const fetchStaffBookings = useCallback(async (userProfile: Profile) => {
@@ -98,61 +98,23 @@ const App: React.FC = () => {
 
   const refreshAllData = useCallback(() => {
     fetchTrips();
-    if (user) {
+    if (user?.id) {
       fetchUserBookings(user.id);
-      if (profile) fetchStaffBookings(profile);
       fetchUserStats(user.id);
+      if (profile) fetchStaffBookings(profile);
     }
-  }, [fetchTrips, fetchUserBookings, fetchStaffBookings, fetchUserStats, user, profile]);
-
-  const addNotification = (title: string, message: string, type: 'info' | 'success' | 'warning' = 'info') => {
-    const newNotif: Notification = {
-      id: Math.random().toString(36).substr(2, 9),
-      title, message, type,
-      timestamp: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
-      read: false
-    };
-    setNotifications(prev => [newNotif, ...prev]);
-  };
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      const now = new Date();
-      let hasChanges = false;
-
-      trips.forEach(async (trip) => {
-        const departure = new Date(trip.departure_time);
-        // Ưu tiên sử dụng arrival_time từ DB, nếu không có thì cộng mặc định 3 tiếng
-        const completionTime = trip.arrival_time 
-          ? new Date(trip.arrival_time) 
-          : new Date(departure.getTime() + 3 * 60 * 60 * 1000);
-
-        if ((trip.status === TripStatus.PREPARING || trip.status === TripStatus.FULL) && now >= departure && now < completionTime) {
-          hasChanges = true;
-          await supabase.from('trips').update({ status: TripStatus.ON_TRIP }).eq('id', trip.id);
-        }
-        else if (trip.status === TripStatus.ON_TRIP && now >= completionTime) {
-          hasChanges = true;
-          await supabase.from('trips').update({ status: TripStatus.COMPLETED }).eq('id', trip.id);
-        }
-      });
-
-      if (hasChanges) fetchTrips();
-    }, 60000);
-
-    return () => clearInterval(interval);
-  }, [trips, fetchTrips]);
+  }, [fetchTrips, fetchUserBookings, fetchStaffBookings, fetchUserStats, user?.id, profile]);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
       const session = data?.session;
-      setUser(session?.user ?? null);
       if (session?.user) {
+        setUser(session.user);
         fetchProfile(session.user.id);
       }
     });
 
-    const { data } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
       const currentUser = session?.user ?? null;
       setUser(currentUser);
       if (currentUser) {
@@ -167,31 +129,78 @@ const App: React.FC = () => {
 
     fetchTrips();
 
+    return () => {
+      authListener.subscription.unsubscribe();
+    };
+  }, [fetchTrips, fetchProfile]);
+
+  useEffect(() => {
+    if (user?.id) {
+      fetchUserBookings(user.id);
+      fetchUserStats(user.id);
+    }
+  }, [user?.id, fetchUserBookings, fetchUserStats]);
+
+  useEffect(() => {
+    if (profile) {
+      fetchStaffBookings(profile);
+    }
+  }, [profile, fetchStaffBookings]);
+
+  useEffect(() => {
     const channel = supabase.channel('app-db-changes')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'trips' }, () => fetchTrips())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'bookings' }, (payload) => {
         fetchTrips();
-        if (user && profile) {
+        if (user?.id) {
           fetchUserBookings(user.id);
-          fetchStaffBookings(profile);
-          
-          if (payload.eventType === 'UPDATE' && payload.new && (payload.new as any).passenger_id === user.id) {
-            const newBooking = payload.new as any;
-            if (newBooking.status === 'CONFIRMED') {
-              addNotification('Thành công', 'Đơn hàng của bạn đã được tài xế xác nhận!', 'success');
-            } else if (newBooking.status === 'REJECTED') {
-              addNotification('Thông báo', 'Rất tiếc, đơn hàng của bạn đã bị từ chối.', 'warning');
-            }
-          }
+          fetchUserStats(user.id);
+          if (profile) fetchStaffBookings(profile);
         }
       })
       .subscribe();
 
     return () => {
-      data.subscription.unsubscribe();
       supabase.removeChannel(channel);
     };
-  }, [fetchTrips, fetchProfile, fetchUserBookings, fetchStaffBookings, fetchUserStats, user?.id, profile?.id]);
+  }, [fetchTrips, fetchUserBookings, fetchStaffBookings, fetchUserStats, user?.id, profile]);
+
+  // Background worker để tự động cập nhật trạng thái chuyến đi
+  useEffect(() => {
+    const interval = setInterval(async () => {
+      const now = new Date();
+      let hasGlobalChanges = false;
+
+      for (const trip of trips) {
+        if (trip.status === TripStatus.CANCELLED || trip.status === TripStatus.COMPLETED) continue;
+
+        const departure = new Date(trip.departure_time);
+        const arrival = trip.arrival_time ? new Date(trip.arrival_time) : new Date(departure.getTime() + 3 * 60 * 60 * 1000);
+        
+        let targetStatus = trip.status;
+
+        if (now > arrival) {
+          targetStatus = TripStatus.COMPLETED;
+        } else if (now >= departure && now <= arrival) {
+          targetStatus = TripStatus.ON_TRIP;
+        } else {
+          const diffMins = Math.floor((departure.getTime() - now.getTime()) / 60000);
+          if (diffMins <= 60 && diffMins > 0) {
+            targetStatus = TripStatus.PREPARING;
+          }
+        }
+
+        if (targetStatus !== trip.status) {
+          hasGlobalChanges = true;
+          await supabase.from('trips').update({ status: targetStatus }).eq('id', trip.id);
+        }
+      }
+
+      if (hasGlobalChanges) fetchTrips();
+    }, 30000);
+
+    return () => clearInterval(interval);
+  }, [trips, fetchTrips]);
 
   const handlePostTrip = async (tripsToPost: any[]) => {
     if (!user) return;
@@ -203,24 +212,17 @@ const App: React.FC = () => {
         dest_name: t.destination.name,
         dest_desc: t.destination.description,
         departure_time: t.departureTime,
-        arrival_time: t.arrivalTime, // Đảm bảo cột này tồn tại trong DB
+        arrival_time: t.arrivalTime,
         price: t.price,
         seats: t.seats,
         available_seats: t.availableSeats,
         vehicle_info: t.vehicleInfo,
-        status: TripStatus.PREPARING
+        status: TripStatus.PREPARING 
       }));
       
       const { error } = await supabase.from('trips').insert(formattedTrips);
+      if (error) throw error;
       
-      if (error) {
-        if (error.message.includes('arrival_time')) {
-          throw new Error('Cơ sở dữ liệu chưa được cập nhật cột "arrival_time". Vui lòng liên hệ quản trị viên hoặc chạy script SQL đã cung cấp.');
-        }
-        throw error;
-      }
-      
-      addNotification('Thành công', `Đã đăng ${formattedTrips.length} chuyến xe mới!`, 'success');
       refreshAllData();
       setActiveTab('manage-trips');
     } catch (err: any) {
@@ -230,12 +232,19 @@ const App: React.FC = () => {
 
   const handleConfirmBooking = async (data: { phone: string; seats: number; note: string }) => {
     if (!selectedTrip || !user) return;
-    const { data: latestTrip } = await supabase.from('trips').select('available_seats').eq('id', selectedTrip.id).single();
+    const { data: latestTrip } = await supabase.from('trips').select('available_seats, status').eq('id', selectedTrip.id).single();
+    
+    if (latestTrip && (latestTrip.status === TripStatus.CANCELLED || latestTrip.status === TripStatus.COMPLETED)) {
+      alert('Xin lỗi, chuyến xe này không còn khả dụng.');
+      return;
+    }
+
     if (latestTrip && latestTrip.available_seats < data.seats) {
       alert(`Rất tiếc! Chuyến xe hiện chỉ còn ${latestTrip.available_seats} ghế.`);
       fetchTrips();
       return;
     }
+
     const { data: newBooking, error: bookingError } = await supabase.from('bookings').insert({
       trip_id: selectedTrip.id,
       passenger_id: user.id,
@@ -252,31 +261,43 @@ const App: React.FC = () => {
       if (newAvailable === 0) {
         await supabase.from('trips').update({ status: TripStatus.FULL }).eq('id', selectedTrip.id);
       }
-      const bCode = `#ORD-${newBooking.id.substring(0, 5).toUpperCase()}`;
-      addNotification('Thành công', `Đặt chỗ thành công! Mã đơn: ${bCode}`, 'success');
       setIsBookingModalOpen(false);
       refreshAllData();
       setActiveTab('bookings');
     }
   };
 
-  const isStaff = profile?.role === 'admin' || profile?.role === 'manager' || profile?.role === 'driver';
-
   const handleOpenBookingModal = (tripId: string) => {
     if (!user) { setIsAuthModalOpen(true); return; }
     const trip = trips.find(t => t.id === tripId);
-    if (trip) { setSelectedTrip(trip); setIsBookingModalOpen(true); }
+    if (trip) { 
+      const statusLabel = getTripStatusDisplay(trip).label;
+      if (statusLabel !== 'Chờ' && statusLabel !== 'Chuẩn bị') {
+        alert('Chuyến xe này hiện không thể nhận thêm khách.');
+        return;
+      }
+      setSelectedTrip(trip); 
+      setIsBookingModalOpen(true); 
+    }
   };
 
   const renderContent = () => {
     switch (activeTab) {
-      case 'dashboard': return isStaff ? <Dashboard bookings={staffBookings} trips={trips} /> : <SearchTrips trips={trips} onBook={handleOpenBookingModal} />;
+      case 'dashboard': return profile && ['admin', 'manager', 'driver'].includes(profile.role) ? <Dashboard bookings={staffBookings} trips={trips} /> : <SearchTrips trips={trips} onBook={handleOpenBookingModal} />;
       case 'search': return <SearchTrips trips={trips} onBook={handleOpenBookingModal} />;
       case 'post': return <PostTrip onPost={handlePostTrip} />;
       case 'bookings': return <BookingsList bookings={bookings} trips={trips} onRefresh={refreshAllData} />;
       case 'manage-trips': return <TripManagement profile={profile} trips={trips} bookings={staffBookings} onRefresh={fetchTrips} />;
       case 'manage-orders': return <OrderManagement profile={profile} trips={trips} onRefresh={refreshAllData} />;
-      case 'profile': return <ProfileManagement profile={profile} onUpdate={() => user && fetchProfile(user.id)} stats={userStats} />;
+      case 'profile': return (
+        <ProfileManagement 
+          profile={profile} 
+          onUpdate={() => user && fetchProfile(user.id)} 
+          stats={userStats} 
+          allTrips={trips}
+          userBookings={bookings}
+        />
+      );
       case 'admin': return profile?.role === 'admin' ? <AdminPanel /> : <SearchTrips trips={trips} onBook={handleOpenBookingModal} />;
       default: return null;
     }

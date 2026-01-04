@@ -15,20 +15,22 @@ const CopyableCode: React.FC<CopyableCodeProps> = ({ code, label, className = ""
   const handleCopy = (e: React.MouseEvent) => {
     e.stopPropagation();
     e.preventDefault();
-    navigator.clipboard.writeText(code);
+    navigator.clipboard.writeText(code.toUpperCase());
     setCopied(true);
     if (onCopy) onCopy();
     setTimeout(() => setCopied(false), 2000);
   };
+
+  const displayValue = label || code;
 
   return (
     <button
       type="button"
       onClick={handleCopy}
       className={`group relative flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer ${className}`}
-      title={`Bấm để sao chép: ${code}`}
+      title={`Bấm để sao chép: ${displayValue}`}
     >
-      {label || code}
+      {displayValue}
       {copied ? (
         <CheckCircle2 size={12} className="text-emerald-400 animate-in zoom-in" />
       ) : (

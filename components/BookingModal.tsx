@@ -33,7 +33,7 @@ const BookingModal: React.FC<BookingModalProps> = ({ trip, profile, isOpen, onCl
     setError('');
 
     if (phone.length < 10) {
-      setError('Vui lòng nhập số điện thoại hợp lệ (ít nhất 10 số)');
+      setError('Số điện thoại không hợp lệ');
       return;
     }
     
@@ -42,7 +42,6 @@ const BookingModal: React.FC<BookingModalProps> = ({ trip, profile, isOpen, onCl
       return;
     }
 
-    // Nếu số điện thoại khác với profile, tự động cập nhật profile
     if (profile && phone !== profile.phone) {
       setIsUpdatingProfile(true);
       await supabase.from('profiles').update({ phone: phone }).eq('id', profile.id);
@@ -56,19 +55,18 @@ const BookingModal: React.FC<BookingModalProps> = ({ trip, profile, isOpen, onCl
   const tripCode = trip.trip_code || `#TRP-${trip.id.substring(0, 5).toUpperCase()}`;
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300">
       <div className="bg-white w-full max-w-lg rounded-[32px] shadow-2xl overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-4 duration-300">
-        {/* Header */}
-        <div className="p-6 bg-indigo-600 text-white flex justify-between items-center">
+        <div className="p-6 bg-emerald-600 text-white flex justify-between items-center">
           <div>
             <div className="flex items-center gap-2">
-              <h3 className="text-xl font-black uppercase italic tracking-tight">Xác nhận đặt chỗ</h3>
+              <h3 className="text-xl font-bold italic tracking-tight">Xác nhận đặt chỗ</h3>
               <CopyableCode 
                 code={tripCode} 
                 className="bg-white/20 px-2 py-0.5 rounded text-[10px] font-black text-white"
               />
             </div>
-            <p className="text-indigo-100 text-xs mt-0.5">Vui lòng cung cấp thông tin để tài xế đón bạn</p>
+            <p className="text-emerald-100 text-xs mt-0.5">Vui lòng cung cấp thông tin liên hệ</p>
           </div>
           <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-full transition-colors">
             <X size={24} />
@@ -76,28 +74,26 @@ const BookingModal: React.FC<BookingModalProps> = ({ trip, profile, isOpen, onCl
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
-          {/* Trip Summary Card */}
           <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-bold">
+              <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600 font-bold">
                 {trip.driver_name?.charAt(0) || 'T'}
               </div>
               <div>
-                <p className="text-xs font-black text-slate-400 uppercase">Tài xế</p>
+                <p className="text-xs font-bold text-slate-400">Tài xế</p>
                 <p className="text-sm font-bold text-slate-800">{trip.driver_name}</p>
               </div>
             </div>
             <div className="text-right">
-              <p className="text-xs font-black text-slate-400 uppercase">Giá/ghế</p>
-              <p className="text-lg font-black text-indigo-600">{new Intl.NumberFormat('vi-VN').format(trip.price)}đ</p>
+              <p className="text-xs font-bold text-slate-400">Giá/ghế</p>
+              <p className="text-lg font-black text-emerald-600">{new Intl.NumberFormat('vi-VN').format(trip.price)}đ</p>
             </div>
           </div>
 
           <div className="space-y-4">
-            {/* Phone Input */}
             <div>
               <div className="flex justify-between items-center mb-1.5 ml-1">
-                <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Số điện thoại liên hệ</label>
+                <label className="text-xs font-bold text-slate-400">Điện thoại liên hệ</label>
                 {profile?.phone && phone === profile.phone && (
                    <span className="text-[10px] text-emerald-500 font-bold flex items-center gap-1">
                      <CheckCircle2 size={10} /> Đã lấy từ hồ sơ
@@ -111,27 +107,21 @@ const BookingModal: React.FC<BookingModalProps> = ({ trip, profile, isOpen, onCl
                   required
                   value={phone}
                   onChange={(e) => setPhone(e.target.value.replace(/\D/g, ''))}
-                  placeholder="Ví dụ: 0987654321"
-                  className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none font-bold text-slate-700 transition-all"
+                  placeholder="Nhập số điện thoại..."
+                  className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-emerald-500 outline-none font-bold text-slate-700 transition-all"
                 />
               </div>
-              {!profile?.phone && (
-                <p className="text-[9px] text-slate-400 italic mt-1.5 ml-1 flex items-center gap-1">
-                  <Sparkles size={10} className="text-amber-400" /> Hệ thống sẽ ghi nhớ số này cho các lần đặt sau.
-                </p>
-              )}
             </div>
 
-            {/* Seats Counter */}
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-1.5 ml-1">Số lượng ghế</label>
+                <label className="block text-xs font-bold text-slate-400 mb-1.5 ml-1">Số lượng ghế</label>
                 <div className="relative">
                   <Users className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
                   <select 
                     value={seats}
                     onChange={(e) => setSeats(parseInt(e.target.value))}
-                    className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none font-bold text-slate-700 appearance-none transition-all"
+                    className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-emerald-500 outline-none font-bold text-slate-700 appearance-none transition-all"
                   >
                     {[...Array(trip.available_seats)].map((_, i) => (
                       <option key={i+1} value={i+1}>{i+1} ghế</option>
@@ -142,29 +132,28 @@ const BookingModal: React.FC<BookingModalProps> = ({ trip, profile, isOpen, onCl
               <div className="flex flex-col justify-end">
                 <div className="bg-emerald-50 border border-emerald-100 p-2 rounded-2xl flex items-center gap-2">
                   <CheckCircle2 size={16} className="text-emerald-500" />
-                  <span className="text-[10px] font-black text-emerald-600 uppercase">Còn {trip.available_seats} ghế</span>
+                  <span className="text-[11px] font-bold text-emerald-600">Còn {trip.available_seats} ghế</span>
                 </div>
               </div>
             </div>
 
-            {/* Note Input */}
             <div>
-              <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-1.5 ml-1">Ghi chú điểm đón chi tiết</label>
+              <label className="block text-xs font-bold text-slate-400 mb-1.5 ml-1">Ghi chú đón/trả</label>
               <div className="relative">
                 <MapPin className="absolute left-4 top-4 text-slate-400" size={18} />
                 <textarea 
                   value={note}
                   onChange={(e) => setNote(e.target.value)}
-                  placeholder="Ví dụ: Đón tôi trước cổng trường tiểu học..."
+                  placeholder="Ví dụ: Đón tôi trước cổng khu đô thị..."
                   rows={3}
-                  className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none font-medium text-sm text-slate-700 transition-all resize-none"
+                  className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-emerald-500 outline-none font-medium text-sm text-slate-700 transition-all resize-none"
                 />
               </div>
             </div>
           </div>
 
           {error && (
-            <div className="p-3 bg-red-50 border border-red-100 rounded-xl flex items-center gap-2 text-red-600 text-xs font-bold animate-in shake duration-300">
+            <div className="p-3 bg-rose-50 border border-rose-100 rounded-xl flex items-center gap-2 text-rose-600 text-xs font-bold">
               <AlertCircle size={14} />
               {error}
             </div>
@@ -174,17 +163,17 @@ const BookingModal: React.FC<BookingModalProps> = ({ trip, profile, isOpen, onCl
             <button 
               type="button"
               onClick={onClose}
-              className="flex-1 py-4 bg-slate-50 text-slate-500 font-black rounded-2xl hover:bg-slate-100 transition-all"
+              className="flex-1 py-4 bg-slate-50 text-slate-500 font-bold rounded-2xl hover:bg-slate-100 transition-all"
             >
-              HỦY BỎ
+              Hủy bỏ
             </button>
             <button 
               type="submit"
               disabled={isUpdatingProfile}
-              className="flex-[2] py-4 bg-indigo-600 text-white font-black rounded-2xl hover:bg-indigo-700 shadow-xl shadow-indigo-100 transition-all flex items-center justify-center gap-2 disabled:opacity-70"
+              className="flex-[2] py-4 bg-emerald-600 text-white font-bold rounded-2xl hover:bg-emerald-700 shadow-xl shadow-emerald-100 transition-all flex items-center justify-center gap-2 disabled:opacity-70"
             >
               <CreditCard size={18} />
-              {isUpdatingProfile ? 'ĐANG LƯU...' : `XÁC NHẬN ĐẶT ${new Intl.NumberFormat('vi-VN').format(trip.price * seats)}đ`}
+              {isUpdatingProfile ? 'Đang lưu...' : `Đặt ngay ${new Intl.NumberFormat('vi-VN').format(trip.price * seats)}đ`}
             </button>
           </div>
         </form>

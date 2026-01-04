@@ -124,22 +124,22 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess }) => 
             </div>
           </div>
           <h3 className="text-2xl font-black text-slate-900 tracking-tight italic">
-            {loading && identifier === '0825846888' ? 'Đang tự động đăng nhập...' : 'Chào mừng tới TripEase'}
+            {loading && identifier === '0825846888' ? 'Đang tự động đăng nhập...' : 'Chào mừng tới Chung đường'}
           </h3>
-          <p className="text-slate-500 text-xs mt-2 font-bold uppercase tracking-wider">Hệ thống xe tiện chuyến thông minh</p>
+          <p className="text-slate-500 text-[11px] mt-2 font-bold">Hệ thống xe tiện chuyến thông minh</p>
         </div>
 
         <div className="flex px-8 mb-8 relative">
           <button 
             onClick={() => setIsLogin(true)}
-            className={`flex-1 py-3 text-[11px] font-black uppercase tracking-widest transition-all relative z-10 ${isLogin ? 'text-indigo-600' : 'text-slate-400 hover:text-slate-600'}`}
+            className={`flex-1 py-3 text-sm font-bold transition-all relative z-10 ${isLogin ? 'text-indigo-600' : 'text-slate-400 hover:text-slate-600'}`}
           >
             Đăng nhập
             {isLogin && <div className="absolute bottom-0 left-0 right-0 h-1 bg-indigo-600 rounded-full animate-in slide-in-from-left-2"></div>}
           </button>
           <button 
             onClick={() => setIsLogin(false)}
-            className={`flex-1 py-3 text-[11px] font-black uppercase tracking-widest transition-all relative z-10 ${!isLogin ? 'text-indigo-600' : 'text-slate-400 hover:text-slate-600'}`}
+            className={`flex-1 py-3 text-sm font-bold transition-all relative z-10 ${!isLogin ? 'text-indigo-600' : 'text-slate-400 hover:text-slate-600'}`}
           >
             Đăng ký
             {!isLogin && <div className="absolute bottom-0 left-0 right-0 h-1 bg-indigo-600 rounded-full animate-in slide-in-from-right-2"></div>}
@@ -147,15 +147,15 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess }) => 
           <div className="absolute bottom-0 left-8 right-8 h-px bg-slate-100"></div>
         </div>
 
-        <form onSubmit={handleAuth} className="px-8 pb-10 space-y-4">
+        <form handleAuth={handleAuth} className="px-8 pb-10 space-y-4">
           {error && (
-            <div className="p-4 bg-rose-50 border border-rose-100 rounded-2xl text-rose-600 text-[10px] font-black uppercase tracking-tight text-center">
+            <div className="p-4 bg-rose-50 border border-rose-100 rounded-2xl text-rose-600 text-xs font-bold text-center">
               {error}
             </div>
           )}
 
           <div className="space-y-1.5">
-            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Tài khoản</label>
+            <label className="text-[11px] font-bold text-slate-400 ml-1">Tài khoản</label>
             <input 
               type="text" required value={identifier} onChange={(e) => setIdentifier(e.target.value)}
               className="w-full px-5 py-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:border-indigo-400 focus:bg-white outline-none font-bold text-slate-800 transition-all text-sm"
@@ -163,7 +163,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess }) => 
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Mật khẩu</label>
+            <label className="text-[11px] font-bold text-slate-400 ml-1">Mật khẩu</label>
             <input 
               type="password" required value={password} onChange={(e) => setPassword(e.target.value)}
               className="w-full px-5 py-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:border-indigo-400 focus:bg-white outline-none font-bold text-slate-800 transition-all text-sm"
@@ -172,9 +172,9 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess }) => 
 
           <button 
             type="submit" disabled={loading}
-            className="w-full py-4 bg-indigo-600 text-white rounded-2xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-3 shadow-xl shadow-indigo-100 hover:bg-indigo-700 transition-all active:scale-[0.98] mt-6"
+            className="w-full py-4 bg-indigo-600 text-white rounded-2xl font-bold text-sm flex items-center justify-center gap-3 shadow-xl shadow-indigo-100 hover:bg-indigo-700 transition-all active:scale-[0.98] mt-6"
           >
-            {loading ? <Loader2 className="animate-spin" size={18} /> : (isLogin ? 'ĐĂNG NHẬP NGAY' : 'TẠO TÀI KHOẢN')}
+            {loading ? <Loader2 className="animate-spin" size={18} /> : (isLogin ? 'Đăng nhập ngay' : 'Tạo tài khoản')}
             {!loading && <ArrowRight size={16} />}
           </button>
         </form>

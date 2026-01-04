@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { X, Users, Phone, CheckCircle2, XCircle, Trash2, Loader2, Navigation } from 'lucide-react';
 import { Trip, Booking } from '../types';
@@ -114,9 +113,21 @@ const TripBookingsModal: React.FC<TripBookingsModalProps> = ({ trip, bookings, i
                               <p className="text-sm font-black text-slate-900 truncate">{booking.profiles?.full_name || 'Khách vãng lai'}</p>
                               <div className="flex items-center gap-3 mt-1">
                                 <CopyableCode code={bookingCode} className="text-[9px] font-black text-slate-400 uppercase tracking-tighter" />
-                                <div className="flex items-center gap-1.5">
-                                  <Phone size={10} className="text-indigo-400" />
-                                  <CopyableCode code={booking.passenger_phone} className="text-[10px] font-bold text-indigo-500" />
+                                <div className="flex items-center gap-2">
+                                  {booking.passenger_phone && (
+                                    <a href={`tel:${booking.passenger_phone}`} className="w-5 h-5 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center hover:bg-emerald-600 hover:text-white transition-all border border-emerald-100" title="Gọi điện">
+                                      <Phone size={8} />
+                                    </a>
+                                  )}
+                                  {booking.passenger_phone ? (
+                                     <CopyableCode 
+                                        code={booking.passenger_phone} 
+                                        className="text-[10px] font-bold text-indigo-500 group"
+                                        label={booking.passenger_phone}
+                                     />
+                                  ) : (
+                                     <span className="text-slate-300 italic text-[10px] font-bold">N/A</span>
+                                  )}
                                 </div>
                               </div>
                             </div>

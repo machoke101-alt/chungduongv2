@@ -13,8 +13,8 @@ const MiniStatCard = ({ title, value, icon: Icon, color, trend }: any) => (
     </div>
     <div className="min-w-0 flex-1">
       <div className="flex items-center gap-2">
-        <h3 className="text-slate-400 text-[10px] font-bold uppercase tracking-[0.15em] truncate">{title}</h3>
-        {trend && <span className="text-emerald-500 text-[9px] font-bold bg-emerald-50 px-1.5 py-0.5 rounded-md">{trend}</span>}
+        <h3 className="text-slate-400 text-[11px] font-bold truncate">{title}</h3>
+        {trend && <span className="text-emerald-500 text-[10px] font-bold bg-emerald-50 px-1.5 py-0.5 rounded-md">{trend}</span>}
       </div>
       <p className="text-xl font-bold text-slate-800 tracking-tighter leading-none mt-1.5 font-outfit">{value}</p>
     </div>
@@ -61,16 +61,16 @@ const Dashboard: React.FC<DashboardProps> = ({ bookings, trips }) => {
         <MiniStatCard title="Chuyến xe" value={stats.tripsCount} icon={Navigation} color="bg-emerald-600" trend="+4" />
         <MiniStatCard title="Yêu cầu" value={stats.bookingsCount} icon={ShoppingBag} color="bg-orange-500" />
         <MiniStatCard title="Xác nhận" value={stats.confirmedCount} icon={CheckCircle2} color="bg-emerald-500" />
-        <MiniStatCard title="Tỷ lệ đầy" value={`${stats.fillRate}%`} icon={TrendingUp} color="bg-teal-600" />
+        <MiniStatCard title="Tỷ lệ lấp đầy" value={`${stats.fillRate}%`} icon={TrendingUp} color="bg-teal-600" />
         <MiniStatCard title="Doanh thu" value={new Intl.NumberFormat('vi-VN').format(stats.totalRevenue)} icon={DollarSign} color="bg-sky-500" />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2 bg-white p-10 rounded-[40px] border border-slate-100 shadow-sm">
           <div className="flex justify-between items-center mb-10">
-            <h3 className="text-xs font-bold text-slate-400 uppercase tracking-[0.2em]">Tăng trưởng doanh thu 7 ngày</h3>
+            <h3 className="text-sm font-bold text-slate-400">Tăng trưởng doanh thu 7 ngày</h3>
             <div className="flex gap-2">
-               <button className="px-3 py-1.5 bg-slate-50 border border-slate-100 rounded-lg text-[9px] font-bold uppercase tracking-widest text-slate-400 hover:text-emerald-600 transition-colors">Tuần này</button>
+               <button className="px-3 py-1.5 bg-slate-50 border border-slate-100 rounded-lg text-xs font-bold text-slate-400 hover:text-emerald-600 transition-colors">Tuần này</button>
             </div>
           </div>
           <div className="h-72">
@@ -83,7 +83,7 @@ const Dashboard: React.FC<DashboardProps> = ({ bookings, trips }) => {
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                <XAxis dataKey="dayLabel" axisLine={false} tickLine={false} tick={{fill: '#94a3b8', fontSize: 10, fontWeight: '600'}} dy={15} />
+                <XAxis dataKey="dayLabel" axisLine={false} tickLine={false} tick={{fill: '#94a3b8', fontSize: 11, fontWeight: '600'}} dy={15} />
                 <Tooltip 
                    cursor={{ stroke: '#10b981', strokeWidth: 1 }}
                    contentStyle={{ borderRadius: '20px', border: 'none', boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1)', fontSize: '12px' }} 
@@ -95,11 +95,11 @@ const Dashboard: React.FC<DashboardProps> = ({ bookings, trips }) => {
         </div>
         
         <div className="bg-white p-10 rounded-[40px] border border-slate-100 shadow-sm flex flex-col">
-          <h3 className="text-xs font-bold text-slate-400 uppercase tracking-[0.2em] mb-10">Phân tích hành vi</h3>
+          <h3 className="text-sm font-bold text-slate-400 mb-10">Phân tích hành vi</h3>
           <div className="space-y-6 flex-1">
             <div className="flex flex-col gap-2">
                <div className="flex justify-between items-end">
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Nhu cầu đặt xe</span>
+                  <span className="text-xs font-bold text-slate-400">Nhu cầu đặt xe</span>
                   <span className="text-xs font-bold text-slate-800">82%</span>
                </div>
                <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
@@ -108,7 +108,7 @@ const Dashboard: React.FC<DashboardProps> = ({ bookings, trips }) => {
             </div>
             <div className="flex flex-col gap-2">
                <div className="flex justify-between items-end">
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Tốc độ xác nhận</span>
+                  <span className="text-xs font-bold text-slate-400">Tốc độ xác nhận</span>
                   <span className="text-xs font-bold text-slate-800">1.2m Avg</span>
                </div>
                <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
@@ -116,15 +116,15 @@ const Dashboard: React.FC<DashboardProps> = ({ bookings, trips }) => {
                </div>
             </div>
             <div className="mt-10 p-6 bg-emerald-600 rounded-[32px] text-white shadow-xl shadow-emerald-100">
-               <p className="text-[10px] font-bold uppercase tracking-[0.2em] opacity-60">Thống kê tháng</p>
+               <p className="text-[11px] font-bold opacity-60">Thống kê tháng</p>
                <p className="text-2xl font-bold mt-2 font-outfit">+150 Trips</p>
                <div className="flex justify-between items-center mt-4 pt-4 border-t border-white/10">
                   <div className="text-center">
-                     <p className="text-[8px] font-bold opacity-60 uppercase">Mới</p>
+                     <p className="text-[10px] font-bold opacity-60">Mới</p>
                      <p className="font-semibold">42</p>
                   </div>
                   <div className="text-center">
-                     <p className="text-[8px] font-bold opacity-60 uppercase">Hoàn thành</p>
+                     <p className="text-[10px] font-bold opacity-60">Hoàn thành</p>
                      <p className="font-semibold">108</p>
                   </div>
                </div>

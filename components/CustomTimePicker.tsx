@@ -20,14 +20,14 @@ const CustomTimePicker: React.FC<CustomTimePickerProps> = ({ selectedTime, onSel
         <div className="p-1.5 bg-indigo-50 rounded-lg">
           <Clock size={14} className="text-indigo-600" />
         </div>
-        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+        <span className="text-[10px] font-black text-slate-400 tracking-widest">
           Chọn giờ khởi hành
         </span>
       </div>
 
       <div className="space-y-4">
         <div>
-          <p className="text-[9px] font-black text-slate-300 uppercase mb-2 ml-1">Giờ</p>
+          <p className="text-[9px] font-bold text-slate-300 mb-2 ml-1">Giờ</p>
           <div className="grid grid-cols-6 gap-1.5">
             {hours.map(hour => (
               <button
@@ -47,7 +47,7 @@ const CustomTimePicker: React.FC<CustomTimePickerProps> = ({ selectedTime, onSel
         </div>
 
         <div>
-          <p className="text-[9px] font-black text-slate-300 uppercase mb-2 ml-1">Phút</p>
+          <p className="text-[9px] font-bold text-slate-300 mb-2 ml-1">Phút</p>
           <div className="grid grid-cols-4 gap-2">
             {minutes.map(min => (
               <button
